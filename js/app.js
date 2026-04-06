@@ -314,20 +314,38 @@ function renderMessages(msgs) {
 
     } else if (msg.type === 'image') {
       const isMine = msg.sender === state.me;
-      const bubbleClass = isMine ? 'bubble-me bubble-image' : 'bubble-other bubble-image';
-      const rowClass = isMine ? 'msg-row-me' : 'msg-row-other';
+      const imageUrl = String(msg.imageUrl || '');
+      if (!/^https?:\/\//i.test(imageUrl)) return;
 
-      el.className = rowClass;
-      el.innerHTML = `
-        ${isMine ? '' : `<div class="msg-sender">${escapeHtml(msg.sender || 'Usuario')}</div>`}
-        <div>
-          <button class="${bubbleClass} img-btn" data-img="${encodeURIComponent(msg.imageUrl || '')}">
-            <img class="chat-img" src="${msg.imageUrl || ''}" alt="Imagen enviada por ${escapeHtml(msg.sender || 'usuario')}" loading="lazy" />
-          </button>
-          <div class="msg-time" style="${isMine ? 'text-align:right; margin-right:4px;' : 'margin-left:3px;'}">
-            ${formatTime(msg.ts)}
-          </div>
-        </div>`;
+      el.className = isMine ? 'msg-row-me' : 'msg-row-other';
+
+      if (!isMine) {
+        const senderEl = document.createElement('div');
+        senderEl.className = 'msg-sender';
+        senderEl.textContent = msg.sender || 'Usuario';
+        el.appendChild(senderEl);
+      }
+
+      const wrap = document.createElement('div');
+      const btn = document.createElement('button');
+      btn.className = `${isMine ? 'bubble-me' : 'bubble-other'} bubble-image img-btn`;
+      btn.setAttribute('data-img', encodeURIComponent(imageUrl));
+
+      const img = document.createElement('img');
+      img.className = 'chat-img';
+      img.src = imageUrl;
+      img.alt = `Imagen enviada por ${msg.sender || 'usuario'}`;
+      img.loading = 'lazy';
+      btn.appendChild(img);
+
+      const time = document.createElement('div');
+      time.className = 'msg-time';
+      time.style.cssText = isMine ? 'text-align:right; margin-right:4px;' : 'margin-left:3px;';
+      time.textContent = formatTime(msg.ts);
+
+      wrap.appendChild(btn);
+      wrap.appendChild(time);
+      el.appendChild(wrap);
 
     } else if (msg.sender === state.me) {
       // Mensaje propio (derecha, burbuja azul)
@@ -533,6 +551,12 @@ document.addEventListener('click', function (e) {
   const src = decodeURIComponent(imgBtn.getAttribute('data-img') || '');
   if (!src) return;
   openImageViewer(src);
+});
+
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  const overlay = document.getElementById('img-viewer');
+  if (overlay) overlay.classList.remove('open');
 });
 
 function openImageViewer(src) {

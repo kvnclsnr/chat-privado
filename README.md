@@ -76,20 +76,7 @@ En Firebase Console → Realtime Database → **Reglas**, usa validaciones por t
         ".read":  true,
         "$msgId": {
           ".write": "root.child('rooms').child($roomId).exists()",
-          ".validate": "
-            newData.hasChildren(['type','ts']) &&
-            (
-              (newData.child('type').val() === 'text' &&
-               newData.hasChildren(['sender','text'])) ||
-              (newData.child('type').val() === 'image' &&
-               newData.hasChildren(['sender','imageUrl','imageMeta']) &&
-               newData.child('imageMeta').hasChildren(['w','h','size','mime'])) ||
-              (newData.child('type').val() === 'sticker' &&
-               newData.hasChildren(['sender','stickerId'])) ||
-              (newData.child('type').val() === 'sys' &&
-               newData.hasChildren(['text']))
-            )
-          "
+          ".validate": "newData.hasChildren(['type','ts']) && ((newData.child('type').val() === 'text' && newData.hasChildren(['sender','text'])) || (newData.child('type').val() === 'image' && newData.hasChildren(['sender','imageUrl','imageMeta']) && newData.child('imageMeta').hasChildren(['w','h','size','mime'])) || (newData.child('type').val() === 'sticker' && newData.hasChildren(['sender','stickerId'])) || (newData.child('type').val() === 'sys' && newData.hasChildren(['text'])))"
         }
       }
     },
@@ -114,14 +101,15 @@ service firebase.storage {
   match /b/{bucket}/o {
     match /rooms/{roomId}/images/{messageId} {
       allow read, write: if
-        request.auth != null &&
-        roomId.matches('^[A-Z0-9]{6}$');
+        roomId.matches('^[A-Z0-9]{6}$') &&
+        messageId.size() > 5 &&
+        messageId.size() < 64;
     }
   }
 }
 ```
 
-> Firebase Storage no puede consultar Realtime Database directamente desde reglas. Por eso se valida formato de ruta (`rooms/{roomId}/images/{messageId}`) + autenticación.
+> Firebase Storage no puede consultar Realtime Database directamente desde reglas. Por eso aquí se valida el formato de ruta (`rooms/{roomId}/images/{messageId}`) y longitud de IDs.
 
 ### 6. Límites recomendados para imágenes
 
