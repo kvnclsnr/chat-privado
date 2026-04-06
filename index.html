@@ -124,12 +124,21 @@
       <div id="msgs"></div>
 
       <div class="inp-area">
-        <textarea id="mi" placeholder="Mensaje..." rows="1"></textarea>
-        <button id="sb" aria-label="Enviar">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-            <path d="M1.5 13.5L13.5 7.5L1.5 1.5V6.5L9.5 7.5L1.5 8.5V13.5Z" fill="white"/>
-          </svg>
-        </button>
+        <div class="reply-band" id="reply-band" hidden>
+          <div class="reply-band-copy">
+            <div class="reply-band-label">Respondiendo a <span id="reply-sender"></span></div>
+            <div class="reply-band-preview" id="reply-preview"></div>
+          </div>
+          <button class="reply-band-cancel" id="reply-cancel" type="button" aria-label="Cancelar respuesta">✕</button>
+        </div>
+        <div class="inp-compose">
+          <textarea id="mi" placeholder="Mensaje..." rows="1"></textarea>
+          <button id="sb" aria-label="Enviar">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <path d="M1.5 13.5L13.5 7.5L1.5 1.5V6.5L9.5 7.5L1.5 8.5V13.5Z" fill="white"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
