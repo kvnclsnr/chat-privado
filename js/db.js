@@ -14,6 +14,10 @@
 //    sender : string   — nombre del remitente (omit en sys)
 //    text   : string   — contenido del mensaje (omit en sys)
 //    type   : string   — "sys" para mensajes de sistema
+//    replyTo: object?  — referencia al mensaje respondido (opcional)
+//      id          : string — id del mensaje original
+//      sender      : string — remitente del mensaje original
+//      textPreview : string — recorte de texto para vista previa
 //    ts     : number   — timestamp
 //
 //  /members/{roomId}/{sessionId}

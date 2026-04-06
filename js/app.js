@@ -11,7 +11,8 @@ const state = {
   memberRef:      null,   // referencia Firebase del miembro (para onDisconnect)
   unsubMsgs:      null,   // función para dejar de escuchar mensajes
   unsubMembers:   null,   // función para dejar de escuchar miembros
-  renderedMsgIds: new Set() // IDs de mensajes ya renderizados
+  renderedMsgIds: new Set(), // IDs de mensajes ya renderizados
+  activeReplyTo:  null     // referencia temporal al mensaje que se está respondiendo
 };
 
 const IMAGE_LIMITS = {
@@ -45,6 +46,13 @@ function escapeHtml(text) {
     .replace(/</g,  '&lt;')
     .replace(/>/g,  '&gt;')
     .replace(/\n/g, '<br>');
+}
+
+/** Recorta una vista previa de texto para respuestas */
+function makeTextPreview(text) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return '(sin texto)';
+  return clean.length > 90 ? clean.slice(0, 90) + '…' : clean;
 }
 
 /** Formatea timestamp a HH:MM */
@@ -133,6 +141,7 @@ document.getElementById('mi').addEventListener('keydown', function (e) {
 document.getElementById('mi').addEventListener('input', function () {
   autoResizeTextarea(this);
 });
+document.getElementById('reply-cancel').addEventListener('click', clearActiveReply);
 
 // ── Acciones principales ─────────────────────────────────────
 
@@ -249,6 +258,7 @@ function enterChat() {
   // Limpiar mensajes previos
   document.getElementById('msgs').innerHTML = '';
   state.renderedMsgIds = new Set();
+  clearActiveReply();
 
   goTo('chat');
 
@@ -286,6 +296,7 @@ async function leaveChat() {
   state.me         = null;
   state.sid        = null;
   state.memberRef  = null;
+  clearActiveReply();
 
   document.getElementById('msgs').innerHTML = '';
   goTo('home');
@@ -356,7 +367,10 @@ function renderMessages(msgs) {
           <div class="msg-time" style="text-align: right; margin-right: 4px;">
             ${formatTime(msg.ts)}
           </div>
+          <button class="msg-reply-btn" type="button">Responder</button>
         </div>`;
+      const btn = el.querySelector('.msg-reply-btn');
+      btn.addEventListener('click', function () { setActiveReplyFromMessage(msg); });
 
     } else {
       // Mensaje ajeno (izquierda, burbuja gris)
@@ -366,7 +380,10 @@ function renderMessages(msgs) {
         <div class="bubble-other">${escapeHtml(msg.text || '')}</div>
         <div class="msg-time" style="margin-left: 3px;">
           ${formatTime(msg.ts)}
-        </div>`;
+        </div>
+        <button class="msg-reply-btn" type="button">Responder</button>`;
+      const btn = el.querySelector('.msg-reply-btn');
+      btn.addEventListener('click', function () { setActiveReplyFromMessage(msg); });
     }
 
     container.appendChild(el);
@@ -377,6 +394,54 @@ function renderMessages(msgs) {
   if (addedCount > 0 && wasAtBottom) {
     container.scrollTop = container.scrollHeight;
   }
+}
+
+/** Construye el bloque visual de cita de una respuesta */
+function renderReplyQuote(replyTo) {
+  if (!replyTo || !replyTo.id) return '';
+  const sender = escapeHtml(replyTo.sender || 'Usuario');
+  const preview = escapeHtml(replyTo.textPreview || '(sin texto)');
+  return `
+    <div class="reply-quote">
+      <div class="reply-quote-sender">${sender}</div>
+      <div class="reply-quote-text">${preview}</div>
+    </div>`;
+}
+
+/** Activa el modo responder usando un mensaje como base */
+function setActiveReplyFromMessage(msg) {
+  if (!msg || msg.type === 'sys' || !msg.id) return;
+  state.activeReplyTo = {
+    id: msg.id,
+    sender: msg.sender || 'Usuario',
+    textPreview: makeTextPreview(msg.text)
+  };
+  renderReplyBand();
+  document.getElementById('mi').focus();
+}
+
+/** Limpia la selección de respuesta activa */
+function clearActiveReply() {
+  state.activeReplyTo = null;
+  renderReplyBand();
+}
+
+/** Renderiza la banda “respondiendo a …” */
+function renderReplyBand() {
+  const band = document.getElementById('reply-band');
+  const sender = document.getElementById('reply-sender');
+  const preview = document.getElementById('reply-preview');
+
+  if (!state.activeReplyTo) {
+    band.hidden = true;
+    sender.textContent = '';
+    preview.textContent = '';
+    return;
+  }
+
+  band.hidden = false;
+  sender.textContent = state.activeReplyTo.sender;
+  preview.textContent = state.activeReplyTo.textPreview;
 }
 
 /** Envía un mensaje a Firebase */
@@ -394,7 +459,18 @@ async function sendMessage() {
       sender: state.me,
       text:   text,
       ts:     Date.now()
-    });
+    };
+
+    if (state.activeReplyTo) {
+      msg.replyTo = {
+        id:          state.activeReplyTo.id,
+        sender:      state.activeReplyTo.sender,
+        textPreview: state.activeReplyTo.textPreview
+      };
+    }
+
+    await DB.sendMessage(state.rid, msg);
+    clearActiveReply();
   } catch (err) {
     console.error('Error al enviar mensaje:', err);
   }

@@ -162,6 +162,28 @@ mensajes-chat/
 
 ---
 
+## 🧾 Esquema de mensajes (Firebase)
+
+Cada mensaje en `/messages/{roomId}/{autoId}` usa este contrato:
+
+```js
+{
+  sender: "Ana",              // omitido en mensajes de sistema
+  text: "Hola 👋",            // omitido en mensajes de sistema
+  type: "sys",                // solo para eventos de sistema
+  ts: 1712599200000,          // timestamp en milisegundos
+  replyTo: {                  // opcional, solo si es una respuesta
+    id: "-Nu1AbCdEf",         // id del mensaje original
+    sender: "Luis",           // remitente del mensaje original
+    textPreview: "¿Ya..."     // recorte de texto para vista previa
+  }
+}
+```
+
+Compatibilidad hacia atrás: los mensajes sin `replyTo` siguen siendo válidos y se renderizan de forma normal.
+
+---
+
 ## 🔧 Desarrollo local
 
 Puedes usar cualquier servidor estático. Por ejemplo con Python:
