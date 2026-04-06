@@ -13,6 +13,7 @@
 /* Page */
 html, body {
   height: 100%;
+  min-height: 100dvh;
   width: 100%;
   background: #05050a;
   display: flex;
@@ -28,6 +29,7 @@ html, body {
   width: 100%;
   max-width: 480px;
   height: 100dvh;
+  min-height: 100dvh;
   max-height: 720px;
   background: #08080f;
   border-radius: 32px;
@@ -93,7 +95,8 @@ h2 {
 
 .sub {
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.58);
   text-align: center;
   line-height: 1.55;
 }
@@ -161,7 +164,7 @@ h2 {
 
 /* ── Screen header ──────────────────────────────────────────── */
 .screen-head {
-  padding: 20px 20px 0;
+  padding: calc(16px + env(safe-area-inset-top)) 20px 0;
   flex-shrink: 0;
 }
 
@@ -305,7 +308,7 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 18px 12px;
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
@@ -320,7 +323,8 @@ h2 {
 
 .chat-sub {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.56);
   margin-top: 2px;
 }
 
@@ -399,7 +403,8 @@ h2 {
 
 .msg-sender {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.52);
   margin-bottom: 3px;
   margin-left: 2px;
 }
@@ -415,7 +420,7 @@ h2 {
   background: #007AFF;
   border-radius: 20px 20px 5px 20px;
   padding: 10px 14px;
-  max-width: 72%;
+  max-width: 78%;
   font-size: 16px;
   line-height: 1.45;
   word-break: break-word;
@@ -426,7 +431,7 @@ h2 {
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px 20px 20px 5px;
   padding: 10px 14px;
-  max-width: 72%;
+  max-width: 78%;
   font-size: 16px;
   line-height: 1.45;
   word-break: break-word;
@@ -442,7 +447,7 @@ h2 {
 
 /* ── Input area ─────────────────────────────────────────────── */
 .inp-area {
-  padding: 10px 14px 18px;
+  padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
   border-top: 0.5px solid rgba(255, 255, 255, 0.08);
   display: flex;
   gap: 10px;
@@ -501,6 +506,21 @@ h2 {
 #sb:hover:not(:disabled)  { opacity: 0.9; }
 #sb:active:not(:disabled) { transform: scale(0.88); }
 
+@media (hover: hover) and (pointer: fine) {
+  .btn-p:hover { opacity: 0.92; }
+  .btn-s:hover { background: rgba(255, 255, 255, 0.14); }
+  .leave-btn:hover { color: #FF453A; }
+
+  .btn-p:focus-visible,
+  .btn-s:focus-visible,
+  .leave-btn:focus-visible,
+  #sb:focus-visible,
+  .back:focus-visible {
+    outline: 2px solid rgba(10, 132, 255, 0.75);
+    outline-offset: 2px;
+  }
+}
+
 /* ============================================================
    RESPONSIVE — Full screen on mobile
    ============================================================ */
@@ -510,5 +530,75 @@ h2 {
     height: 100dvh;
     max-height: 100dvh;
     border-radius: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  h1 { font-size: 29px; }
+  h2 { font-size: 24px; }
+  .sub { font-size: 14px; }
+  .chat-title { font-size: 16px; }
+
+  .center-col {
+    padding: 28px 18px;
+    gap: 18px;
+  }
+
+  .screen-head,
+  .sc,
+  .chat-hdr,
+  .inp-area {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .bubble-me,
+  .bubble-other {
+    max-width: 82%;
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  #ca {
+    width: min(92vw, 860px);
+    max-width: 860px;
+    min-height: 88dvh;
+    max-height: 92dvh;
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  }
+
+  #msgs {
+    padding-top: 16px;
+    padding-bottom: 10px;
+  }
+
+  .msg-row-me,
+  .msg-row-other {
+    margin-left: 22px;
+    margin-right: 22px;
+  }
+
+  .bubble-me,
+  .bubble-other {
+    max-width: 68%;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 540px) {
+  #ca {
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .chat-hdr {
+    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-bottom: 8px;
+  }
+
+  #msgs {
+    padding-top: 6px;
   }
 }
