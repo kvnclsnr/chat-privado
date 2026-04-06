@@ -1,7 +1,7 @@
 # 💬 Mensajes — Chat Privado
 
 Chat en tiempo real con código de acceso privado y estilo iOS 26 modo oscuro.  
-Construido con HTML, CSS, JavaScript vanilla y **Firebase Realtime Database**.
+Construido con HTML, CSS, JavaScript vanilla, **Firebase Realtime Database** y **Firebase Storage**.
 
 ---
 
@@ -11,6 +11,7 @@ Construido con HTML, CSS, JavaScript vanilla y **Firebase Realtime Database**.
 - Elegir la capacidad máxima de usuarios (2–20)
 - Código de sala único de 6 caracteres para compartir
 - Mensajes en tiempo real sin recarga (Firebase listeners)
+- Envío de imágenes con compresión/redimensión en cliente antes de subir
 - Presencia automática: los miembros se eliminan al cerrar la pestaña
 - Diseño iOS 26 modo oscuro, responsive para móvil y escritorio
 
@@ -50,9 +51,15 @@ const firebaseConfig = {
 };
 ```
 
-### 4. Reglas de seguridad (recomendado)
+### 4. Habilitar Firebase Storage
 
-En Firebase Console → Realtime Database → **Reglas**, pega esto para producción:
+1. En Firebase Console ve a **Build → Storage**
+2. Crea el bucket (recomendado mismo proyecto/región del Realtime Database)
+3. Verifica que `storageBucket` en `js/config.js` corresponda a tu bucket
+
+### 5. Reglas de seguridad (recomendado)
+
+En Firebase Console → Realtime Database → **Reglas**, usa validaciones por tipo:
 
 ```json
 {
@@ -60,24 +67,69 @@ En Firebase Console → Realtime Database → **Reglas**, pega esto para producc
     "rooms": {
       "$roomId": {
         ".read":  true,
-        ".write": "!data.exists()"
+        ".write": "!data.exists()",
+        ".validate": "newData.hasChildren(['name','code','maxUsers','createdBy','createdAt'])"
       }
     },
     "messages": {
       "$roomId": {
         ".read":  true,
-        ".write": true
+        "$msgId": {
+          ".write": "root.child('rooms').child($roomId).exists()",
+          ".validate": "
+            newData.hasChildren(['type','ts']) &&
+            (
+              (newData.child('type').val() === 'text' &&
+               newData.hasChildren(['sender','text'])) ||
+              (newData.child('type').val() === 'image' &&
+               newData.hasChildren(['sender','imageUrl','imageMeta']) &&
+               newData.child('imageMeta').hasChildren(['w','h','size','mime'])) ||
+              (newData.child('type').val() === 'sticker' &&
+               newData.hasChildren(['sender','stickerId'])) ||
+              (newData.child('type').val() === 'sys' &&
+               newData.hasChildren(['text']))
+            )
+          "
+        }
       }
     },
     "members": {
       "$roomId": {
-        ".read":  true,
-        ".write": true
+        ".read": "root.child('rooms').child($roomId).exists()",
+        "$sessionId": {
+          ".write": "root.child('rooms').child($roomId).exists()",
+          ".validate": "newData.hasChildren(['name','joinedAt'])"
+        }
       }
     }
   }
 }
 ```
+
+Y en Firebase Console → Storage → **Reglas**:
+
+```txt
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /rooms/{roomId}/images/{messageId} {
+      allow read, write: if
+        request.auth != null &&
+        roomId.matches('^[A-Z0-9]{6}$');
+    }
+  }
+}
+```
+
+> Firebase Storage no puede consultar Realtime Database directamente desde reglas. Por eso se valida formato de ruta (`rooms/{roomId}/images/{messageId}`) + autenticación.
+
+### 6. Límites recomendados para imágenes
+
+- Tipo permitido: `image/*` (jpg, png, webp, etc.)
+- Tamaño de archivo de entrada: **hasta 12 MB**
+- Redimensión cliente: lado máximo **1600 px**
+- Salida comprimida: JPEG con objetivo ~**850 KB**
+- En chats de alto tráfico, evalúa bajar a 1200 px / 500 KB para reducir costo de transferencia.
 
 ---
 
@@ -155,5 +207,6 @@ npx serve .
 
 - HTML5 / CSS3 / JavaScript (vanilla, sin frameworks)
 - [Firebase Realtime Database](https://firebase.google.com/docs/database) v10
+- [Firebase Storage](https://firebase.google.com/docs/storage) v10 (compat)
 - Fuente del sistema iOS/macOS (`-apple-system, SF Pro Text`)
 - Desplegable en cualquier hosting estático (GitHub Pages, Netlify, Vercel, etc.)

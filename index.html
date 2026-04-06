@@ -11,6 +11,7 @@
   <!-- Firebase SDK v10 -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 </head>
 <body>
 
@@ -122,8 +123,11 @@
       </div>
 
       <div id="msgs"></div>
+      <div class="err chat-err" id="ch-er"></div>
 
       <div class="inp-area">
+        <input id="fi" type="file" accept="image/*" hidden />
+        <button id="ab" class="attach-btn" aria-label="Adjuntar imagen" title="Adjuntar imagen">📎</button>
         <textarea id="mi" placeholder="Mensaje..." rows="1"></textarea>
         <button id="sb" aria-label="Enviar">
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">

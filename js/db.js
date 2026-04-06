@@ -23,10 +23,12 @@
 // ============================================================
 
 let _db = null;
+let _storage = null;
 
 /** Inicializa la referencia a la base de datos */
 function initDB() {
   _db = firebase.database();
+  _storage = firebase.storage();
 }
 
 const DB = {
@@ -70,6 +72,37 @@ const DB = {
   /** Envía un mensaje de usuario */
   sendMessage: async function (roomId, msg) {
     await _db.ref(`messages/${roomId}`).push(msg);
+  },
+
+  /** Envía un mensaje usando un ID predefinido */
+  sendMessageWithId: async function (roomId, messageId, msg) {
+    await _db.ref(`messages/${roomId}/${messageId}`).set(msg);
+  },
+
+  /** Crea una clave de mensaje para poder reutilizarla en uploads */
+  createMessageId: function (roomId) {
+    return _db.ref(`messages/${roomId}`).push().key;
+  },
+
+  /**
+   * Sube una imagen a Firebase Storage en la ruta de sala/mensaje
+   * @returns {Object} { downloadURL, fullPath, contentType, size }
+   */
+  uploadRoomImage: async function (roomId, messageId, fileBlob, contentType) {
+    const safeType = contentType || 'image/jpeg';
+    const path = `rooms/${roomId}/images/${messageId}`;
+    const ref = _storage.ref(path);
+    const snapshot = await ref.put(fileBlob, {
+      contentType: safeType,
+      cacheControl: 'public,max-age=31536000'
+    });
+    const downloadURL = await snapshot.ref.getDownloadURL();
+    return {
+      downloadURL: downloadURL,
+      fullPath: snapshot.metadata.fullPath,
+      contentType: snapshot.metadata.contentType,
+      size: snapshot.metadata.size
+    };
   },
 
   /** Publica un mensaje de sistema (ej. "María se unió") */

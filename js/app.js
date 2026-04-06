@@ -14,6 +14,13 @@ const state = {
   renderedMsgIds: new Set() // IDs de mensajes ya renderizados
 };
 
+const IMAGE_LIMITS = {
+  maxInputBytes:    12 * 1024 * 1024, // 12 MB máximo de archivo original
+  maxUploadBytes:   850 * 1024,       // Objetivo tras compresión: ~850 KB
+  maxDimension:     1600,
+  preferredQuality: 0.82
+};
+
 // ── Utilidades ───────────────────────────────────────────────
 
 /** Genera un ID de sala de 6 caracteres (sin letras/números ambiguos) */
@@ -64,6 +71,11 @@ function showError(elementId, message) {
   setTimeout(() => { el.style.display = 'none'; }, 4500);
 }
 
+/** Muestra errores en el chat (debajo de mensajes) */
+function showChatError(message) {
+  showError('ch-er', message);
+}
+
 // ── Eventos de UI ────────────────────────────────────────────
 
 // Pantalla Home
@@ -108,6 +120,10 @@ document.getElementById('btn-enter').addEventListener('click', enterChat);
 // Pantalla Chat
 document.getElementById('btn-leave').addEventListener('click', leaveChat);
 document.getElementById('sb').addEventListener('click', sendMessage);
+document.getElementById('ab').addEventListener('click', () => {
+  document.getElementById('fi').click();
+});
+document.getElementById('fi').addEventListener('change', onImageSelected);
 document.getElementById('mi').addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -296,12 +312,29 @@ function renderMessages(msgs) {
       el.className   = 'msg-sys';
       el.textContent = msg.text;
 
+    } else if (msg.type === 'image') {
+      const isMine = msg.sender === state.me;
+      const bubbleClass = isMine ? 'bubble-me bubble-image' : 'bubble-other bubble-image';
+      const rowClass = isMine ? 'msg-row-me' : 'msg-row-other';
+
+      el.className = rowClass;
+      el.innerHTML = `
+        ${isMine ? '' : `<div class="msg-sender">${escapeHtml(msg.sender || 'Usuario')}</div>`}
+        <div>
+          <button class="${bubbleClass} img-btn" data-img="${encodeURIComponent(msg.imageUrl || '')}">
+            <img class="chat-img" src="${msg.imageUrl || ''}" alt="Imagen enviada por ${escapeHtml(msg.sender || 'usuario')}" loading="lazy" />
+          </button>
+          <div class="msg-time" style="${isMine ? 'text-align:right; margin-right:4px;' : 'margin-left:3px;'}">
+            ${formatTime(msg.ts)}
+          </div>
+        </div>`;
+
     } else if (msg.sender === state.me) {
       // Mensaje propio (derecha, burbuja azul)
       el.className = 'msg-row-me';
       el.innerHTML = `
         <div>
-          <div class="bubble-me">${escapeHtml(msg.text)}</div>
+          <div class="bubble-me">${escapeHtml(msg.text || '')}</div>
           <div class="msg-time" style="text-align: right; margin-right: 4px;">
             ${formatTime(msg.ts)}
           </div>
@@ -312,7 +345,7 @@ function renderMessages(msgs) {
       el.className = 'msg-row-other';
       el.innerHTML = `
         <div class="msg-sender">${escapeHtml(msg.sender)}</div>
-        <div class="bubble-other">${escapeHtml(msg.text)}</div>
+        <div class="bubble-other">${escapeHtml(msg.text || '')}</div>
         <div class="msg-time" style="margin-left: 3px;">
           ${formatTime(msg.ts)}
         </div>`;
@@ -339,6 +372,7 @@ async function sendMessage() {
 
   try {
     await DB.sendMessage(state.rid, {
+      type:   'text',
       sender: state.me,
       text:   text,
       ts:     Date.now()
@@ -346,6 +380,114 @@ async function sendMessage() {
   } catch (err) {
     console.error('Error al enviar mensaje:', err);
   }
+}
+
+/** Valida input, comprime imagen y la sube a Storage para enviar mensaje de tipo image */
+async function onImageSelected(e) {
+  const input = e.target;
+  const file = input.files && input.files[0];
+  input.value = '';
+
+  if (!file || !state.rid) return;
+
+  if (!file.type || !file.type.startsWith('image/')) {
+    return showChatError('Solo se permiten archivos de imagen.');
+  }
+  if (file.size > IMAGE_LIMITS.maxInputBytes) {
+    return showChatError('Imagen demasiado grande. Máximo permitido: 12 MB.');
+  }
+
+  const attachBtn = document.getElementById('ab');
+  attachBtn.disabled = true;
+  attachBtn.textContent = '⏳';
+
+  try {
+    const packed = await compressImage(file, IMAGE_LIMITS);
+    if (packed.blob.size > IMAGE_LIMITS.maxUploadBytes * 1.4) {
+      throw new Error('No se pudo reducir lo suficiente la imagen.');
+    }
+
+    const messageId = DB.createMessageId(state.rid);
+    const upload = await DB.uploadRoomImage(state.rid, messageId, packed.blob, packed.mime);
+
+    await DB.sendMessageWithId(state.rid, messageId, {
+      type: 'image',
+      imageUrl: upload.downloadURL,
+      imageMeta: {
+        w: packed.width,
+        h: packed.height,
+        size: packed.blob.size,
+        mime: packed.mime
+      },
+      sender: state.me,
+      ts: Date.now()
+    });
+  } catch (err) {
+    console.error('Error al subir imagen:', err);
+    showChatError('No se pudo enviar la imagen. Intenta con otra más liviana.');
+  } finally {
+    attachBtn.disabled = false;
+    attachBtn.textContent = '📎';
+  }
+}
+
+/** Comprime/redimensiona una imagen en cliente con Canvas */
+async function compressImage(file, limits) {
+  const dataUrl = await readFileAsDataURL(file);
+  const img = await loadImage(dataUrl);
+
+  const ratio = Math.min(1, limits.maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
+  const targetW = Math.max(1, Math.round(img.naturalWidth * ratio));
+  const targetH = Math.max(1, Math.round(img.naturalHeight * ratio));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW;
+  canvas.height = targetH;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, targetW, targetH);
+
+  let quality = limits.preferredQuality;
+  let blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+
+  while (blob.size > limits.maxUploadBytes && quality > 0.45) {
+    quality -= 0.08;
+    blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+  }
+
+  return {
+    blob: blob,
+    width: targetW,
+    height: targetH,
+    mime: 'image/jpeg'
+  };
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) return reject(new Error('No se pudo procesar la imagen.'));
+      resolve(blob);
+    }, type, quality);
+  });
 }
 
 /** Ajusta la altura del textarea automáticamente */
@@ -383,6 +525,37 @@ window.addEventListener('load', function () {
       </div>`;
   }
 });
+
+// Apertura de imágenes en tamaño completo
+document.addEventListener('click', function (e) {
+  const imgBtn = e.target.closest('.img-btn');
+  if (!imgBtn) return;
+  const src = decodeURIComponent(imgBtn.getAttribute('data-img') || '');
+  if (!src) return;
+  openImageViewer(src);
+});
+
+function openImageViewer(src) {
+  let overlay = document.getElementById('img-viewer');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'img-viewer';
+    overlay.className = 'img-viewer';
+    overlay.innerHTML = `
+      <button class="img-viewer-close" aria-label="Cerrar imagen">✕</button>
+      <img class="img-viewer-image" alt="Vista completa" />
+    `;
+    overlay.addEventListener('click', function (evt) {
+      if (evt.target === overlay || evt.target.classList.contains('img-viewer-close')) {
+        overlay.classList.remove('open');
+      }
+    });
+    document.body.appendChild(overlay);
+  }
+
+  overlay.querySelector('.img-viewer-image').src = src;
+  overlay.classList.add('open');
+}
 
 // Limpieza al cerrar la pestaña
 window.addEventListener('beforeunload', function () {
