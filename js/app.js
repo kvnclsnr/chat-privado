@@ -26,7 +26,8 @@ const state = {
     yPct: 50,
     sizePct: 65
   },
-  stickerPanelTimeoutId: null
+  stickerPanelTimeoutId: null,
+  pendingJoinNotice: ''
 };
 
 const IMAGE_LIMITS = {
@@ -332,7 +333,7 @@ async function handleJoin() {
     const isPermissionDenied = code.includes('permission_denied') || message.includes('permission_denied');
     if (isPermissionDenied) {
       console.warn('[join] No se pudo verificar ban por permisos. Continuando sin ban temporal.', err);
-      showError('j-er', 'Aviso: no se pudo validar estado de ban (permisos). Entrando con validación temporal.');
+      state.pendingJoinNotice = 'Aviso: no se pudo validar estado de ban por permisos. Se aplicará validación al actualizar el estado.';
     } else {
       console.error('[join] Error al verificar ban:', err);
       return showError('j-er', 'No se pudo validar el estado de ban. Intenta de nuevo.');
@@ -379,6 +380,12 @@ function enterChat() {
   setChatStatus('');
 
   goTo('chat');
+
+  if (state.pendingJoinNotice) {
+    setChatStatus(state.pendingJoinNotice);
+    setTimeout(() => setChatStatus(''), 6000);
+    state.pendingJoinNotice = '';
+  }
 
   state.unsubMsgs = DB.onMessages(state.rid, renderMessages);
   state.unsubMembers = DB.onMembers(state.rid, members => {
