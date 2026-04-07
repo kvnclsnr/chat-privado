@@ -88,9 +88,9 @@ const DB = {
   },
 
   // ── MIEMBROS ─────────────────────────────────────────────
-  joinRoom: async function (roomId, sessionId, name) {
+  joinRoom: async function (roomId, sessionId, name, userKey) {
     const ref = _db.ref(`members/${roomId}/${sessionId}`);
-    await ref.set({ name, joinedAt: Date.now() });
+    await ref.set({ name, joinedAt: Date.now(), userKey });
     ref.onDisconnect().remove();
     return ref;
   },
@@ -112,6 +112,23 @@ const DB = {
       callback(snap.val());
     });
     return function () { ref.off('value'); };
+  },
+
+  getBan: async function (roomId, userKey) {
+    const snap = await _db.ref(`bans/${roomId}/${userKey}`).once('value');
+    return snap.val();
+  },
+
+  banMember: async function (roomId, targetSessionId, targetUserKey, banMark, kickedMark) {
+    const updates = {};
+    updates[`members/${roomId}/${targetSessionId}`] = null;
+    updates[`kicked/${roomId}/${targetSessionId}`] = kickedMark;
+    updates[`bans/${roomId}/${targetUserKey}`] = banMark;
+    await _db.ref().update(updates);
+  },
+
+  liftBan: async function (roomId, userKey) {
+    await _db.ref(`bans/${roomId}/${userKey}`).remove();
   },
 
   onMembers: function (roomId, callback) {
