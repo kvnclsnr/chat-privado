@@ -561,7 +561,6 @@ h2 {
   flex: 1;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   touch-action: pan-y;
@@ -1038,8 +1037,8 @@ h2 {
 
 @media (hover: hover) and (pointer: fine) {
   .msg-reply-icon {
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0.3;
+    pointer-events: auto;
   }
 
   .msg-row:hover .msg-reply-icon,
