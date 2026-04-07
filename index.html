@@ -106,12 +106,20 @@
           <div class="chat-sub" id="ch-me">—</div>
         </div>
         <div class="chat-hdr-right">
-          <div class="pill">
+          <button class="pill" id="members-pill" type="button" aria-label="Ver miembros conectados" aria-haspopup="true" aria-expanded="false">
             <div class="dot"></div>
             <span id="ch-cnt">1</span>
-          </div>
+          </button>
           <button class="leave-btn" id="btn-leave">Salir</button>
         </div>
+      </div>
+
+      <div class="members-panel" id="members-panel" hidden>
+        <div class="members-panel-head">
+          <strong>Miembros conectados</strong>
+          <button class="members-close" id="members-close" type="button" aria-label="Cerrar panel de miembros">✕</button>
+        </div>
+        <div class="members-list" id="members-list"></div>
       </div>
 
       <div id="msgs"></div>
