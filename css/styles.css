@@ -31,7 +31,6 @@ html, body {
   min-height: 100dvh;
   width: 100%;
   background: radial-gradient(130% 90% at 50% 0%, #15203f 0%, var(--bg-main) 55%);
-  display: flex;
   align-items: center;
   justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
