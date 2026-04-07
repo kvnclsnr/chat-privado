@@ -771,7 +771,7 @@ h2 {
 .inp-compose {
   display: flex;
   gap: 10px;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .reply-band {
