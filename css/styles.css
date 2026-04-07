@@ -578,6 +578,7 @@ h2 {
 .msg-body {
   display: flex;
   flex-direction: column;
+  width: fit-content;
   min-width: 0;
   max-width: 100%;
   position: relative;
@@ -586,10 +587,12 @@ h2 {
 
 .msg-body-me {
   align-items: flex-end;
+  align-self: flex-end;
 }
 
 .msg-body-other {
   align-items: flex-start;
+  align-self: flex-start;
 }
 
 .msg-sender {
@@ -634,6 +637,11 @@ h2 {
 }
 
 .msg-reply-icon-me {
+  left: -14px;
+}
+
+.msg-reply-icon-other {
+  right: -14px;
   left: -34px;
 }
 
@@ -1037,6 +1045,8 @@ h2 {
     display: flex;
   }
 
+  .msg-reply-icon-me { left: -14px; }
+  .msg-reply-icon-other { right: -14px; }
   .msg-reply-icon-me {
     left: -26px;
   }
