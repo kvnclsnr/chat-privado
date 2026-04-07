@@ -764,7 +764,7 @@ h2 {
   box-shadow: 0 16px 30px rgba(2, 6, 20, 0.35), 0 7px 14px rgba(2, 6, 18, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   flex-shrink: 0;
 }
 
@@ -777,9 +777,10 @@ h2 {
 .reply-band {
   width: 100%;
   background: rgba(255, 255, 255, 0.035);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border: 0 solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  padding: 6px 8px;
+  padding: 0;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -797,6 +798,9 @@ h2 {
 }
 
 .reply-band.is-visible {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-width: 0.5px;
   max-height: 44px;
   opacity: 1;
   transform: translateY(0) scale(1);
