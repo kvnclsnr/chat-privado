@@ -528,6 +528,7 @@ h2 {
 #msgs {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 10px 0 6px;
   scroll-behavior: smooth;
 }
@@ -560,9 +561,15 @@ h2 {
   flex: 1;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   touch-action: pan-y;
+}
+
+.msg-swipe-track {
+  min-width: 0;
+  width: 100%;
 }
 
 .msg-row-me .msg-content {
@@ -578,6 +585,8 @@ h2 {
   flex-direction: column;
   min-width: 0;
   max-width: 100%;
+  position: relative;
+  padding-bottom: 2px;
 }
 
 .msg-body-me {
@@ -608,19 +617,23 @@ h2 {
 }
 
 .msg-reply-icon {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   border: 0.5px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(8, 10, 20, 0.5);
   color: rgba(255, 255, 255, 0.82);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  position: absolute;
+  right: -8px;
+  bottom: -6px;
   cursor: pointer;
-  align-self: center;
   flex-shrink: 0;
-  opacity: 0.34;
+  opacity: 0.72;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(2, 7, 21, 0.45);
   transition: opacity 0.14s ease, transform 0.14s ease;
 }
 
@@ -636,7 +649,7 @@ h2 {
 
 .bubble-image {
   padding: 4px;
-  max-width: min(72%, 230px);
+  max-width: clamp(160px, 72vw, 230px);
 }
 
 .img-btn {
@@ -659,7 +672,7 @@ h2 {
   background: linear-gradient(160deg, var(--accent), var(--accent-strong));
   border-radius: 20px 20px 5px 20px;
   padding: 10px 14px;
-  max-width: min(78%, 100%);
+  max-width: clamp(120px, 78vw, 100%);
   font-size: 16px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -671,7 +684,7 @@ h2 {
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px 20px 20px 5px;
   padding: 10px 14px;
-  max-width: min(78%, 100%);
+  max-width: clamp(120px, 78vw, 100%);
   font-size: 16px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -708,14 +721,14 @@ h2 {
 
 /* ── Input area ─────────────────────────────────────────────── */
 .inp-area {
-  margin: 8px 10px calc(8px + env(safe-area-inset-bottom));
-  padding: 11px 10px;
+  margin: 9px 10px calc(9px + env(safe-area-inset-bottom));
+  padding: 10px;
   border: 0.5px solid var(--glass-hairline);
   border-radius: 20px;
   background: var(--glass-soft);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
   backdrop-filter: blur(22px) saturate(150%);
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 16px 30px rgba(2, 6, 20, 0.35), 0 7px 14px rgba(2, 6, 18, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
   display: flex;
   flex-direction: column;
   gap: 8px;
