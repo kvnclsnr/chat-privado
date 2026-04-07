@@ -13,6 +13,7 @@ const state = {
   unsubMembers: null,
   renderedMsgIds: new Set(),
   activeReplyTo: null,
+  replyCollapseTimer: null,
   stickerStudio: {
     sourceImg: null,
     xPct: 50,
@@ -40,6 +41,8 @@ const SWIPE_REPLY = {
   thresholdPx: 42,
   maxTranslatePx: 62
 };
+const REPLY_AUTO_COLLAPSE_MS = 3200;
+const REPLY_BAND_ANIM_MS = 210;
 
 const ALLOWED_MESSAGE_KEYS = {
   text: ['type', 'sender', 'text', 'ts', 'replyTo'],
@@ -150,7 +153,12 @@ document.getElementById('mi').addEventListener('keydown', function (e) {
     sendMessage();
   }
 });
-document.getElementById('mi').addEventListener('input', function () { autoResizeTextarea(this); });
+document.getElementById('mi').addEventListener('input', function () {
+  autoResizeTextarea(this);
+  cancelReplyAutoCollapse();
+});
+document.getElementById('mi').addEventListener('focus', cancelReplyAutoCollapse);
+document.getElementById('mi').addEventListener('blur', scheduleReplyAutoCollapse);
 
 document.getElementById('reply-cancel').addEventListener('click', clearActiveReply);
 
@@ -481,6 +489,7 @@ function resetSwipeTransform(targetEl) {
 
 function setActiveReplyFromMessage(msg) {
   if (!msg || msg.type === 'sys' || !msg.id) return;
+  cancelReplyAutoCollapse();
   const preview = msg.type === 'sticker' ? '[sticker]' : (msg.type === 'image' ? '[imagen]' : makeTextPreview(msg.text));
   state.activeReplyTo = { id: msg.id, sender: msg.sender || 'Usuario', textPreview: preview };
   renderReplyBand();
@@ -488,25 +497,58 @@ function setActiveReplyFromMessage(msg) {
 }
 
 function clearActiveReply() {
+  cancelReplyAutoCollapse();
   state.activeReplyTo = null;
   renderReplyBand();
 }
 
 function renderReplyBand() {
   const band = document.getElementById('reply-band');
-  const sender = document.getElementById('reply-sender');
   const preview = document.getElementById('reply-preview');
+  const clearHideTimer = () => {
+    if (band._hideTimer) {
+      clearTimeout(band._hideTimer);
+      band._hideTimer = null;
+    }
+  };
 
   if (!state.activeReplyTo) {
-    band.hidden = true;
-    sender.textContent = '';
     preview.textContent = '';
+    if (band.hidden) return;
+    clearHideTimer();
+    band.classList.remove('is-visible');
+    band._hideTimer = setTimeout(() => {
+      band.hidden = true;
+      band._hideTimer = null;
+    }, REPLY_BAND_ANIM_MS);
     return;
   }
 
+  clearHideTimer();
+  preview.textContent = `↩︎ @${state.activeReplyTo.sender} · ${state.activeReplyTo.textPreview}`;
+  if (!band.hidden && band.classList.contains('is-visible')) return;
   band.hidden = false;
-  sender.textContent = state.activeReplyTo.sender;
-  preview.textContent = state.activeReplyTo.textPreview;
+  requestAnimationFrame(() => {
+    band.classList.add('is-visible');
+  });
+}
+
+function scheduleReplyAutoCollapse() {
+  cancelReplyAutoCollapse();
+  if (!state.activeReplyTo) return;
+  const input = document.getElementById('mi');
+  if (!input || input.value.trim()) return;
+  state.replyCollapseTimer = setTimeout(() => {
+    const currentInput = document.getElementById('mi');
+    if (!currentInput || currentInput.value.trim()) return;
+    clearActiveReply();
+  }, REPLY_AUTO_COLLAPSE_MS);
+}
+
+function cancelReplyAutoCollapse() {
+  if (!state.replyCollapseTimer) return;
+  clearTimeout(state.replyCollapseTimer);
+  state.replyCollapseTimer = null;
 }
 
 function validateOutgoingMessage(msg) {
