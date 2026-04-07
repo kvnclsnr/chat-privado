@@ -22,7 +22,7 @@
         ".read": "root.child('rooms').child($roomId).exists()",
         "$sessionId": {
           ".write": "root.child('rooms').child($roomId).exists()",
-          ".validate": "newData.hasChildren(['name','joinedAt','userKey']) && (newData.getChildrenCount() === 3) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 24 && newData.child('joinedAt').isNumber() && newData.child('userKey').isString() && newData.child('userKey').val().matches('^u_[a-z0-9]+$')"
+          ".validate": "newData.exists() ? (newData.hasChildren(['name','joinedAt','userKey']) && (newData.getChildrenCount() === 3) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 24 && newData.child('joinedAt').isNumber() && newData.child('userKey').isString() && newData.child('userKey').val().matches('^u_[a-z0-9]+$')) : true"
         }
       }
     },
