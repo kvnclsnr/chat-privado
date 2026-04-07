@@ -662,8 +662,12 @@ h2 {
 }
 
 .bubble-image {
-  padding: 4px;
+  padding: 6px;
   max-width: clamp(160px, 72vw, 230px);
+}
+
+.bubble-sticker {
+  padding: 6px;
 }
 
 .img-btn {
@@ -673,10 +677,15 @@ h2 {
   cursor: pointer;
 }
 
+.bubble-media-btn {
+  display: block;
+  width: 100%;
+}
+
 .chat-img {
   width: 100%;
   max-width: 220px;
-  border-radius: 14px;
+  border-radius: 12px;
   display: block;
   object-fit: cover;
 }
@@ -706,9 +715,19 @@ h2 {
 }
 
 .reply-quote {
-  border-left: 2px solid rgba(255, 255, 255, 0.45);
-  padding-left: 8px;
-  margin-bottom: 8px;
+  border-left: 3px solid rgba(255, 255, 255, 0.45);
+  padding: 6px 8px;
+  margin: 0 0 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.bubble-me .reply-quote {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.bubble-other .reply-quote {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .reply-quote-sender {
@@ -1027,12 +1046,6 @@ h2 {
   #msgs {
     padding-top: 6px;
   }
-}
-
-.msg-row-sticker .sticker-wrap {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
 }
 
 @media (hover: hover) and (pointer: fine) {

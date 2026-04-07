@@ -636,10 +636,14 @@ function renderMessages(msgs) {
 function renderTextMessage(container, msg) {
   const isMine = msg.sender === state.me;
   const shell = buildReplyShell(container, msg, isMine);
-  renderReplyQuote(shell.body, msg.replyTo);
   const bubble = document.createElement('div');
   bubble.className = isMine ? 'bubble-me' : 'bubble-other';
-  bubble.innerHTML = escapeHtml(msg.text || '');
+  renderReplyQuote(bubble, msg.replyTo);
+
+  const textBlock = document.createElement('div');
+  textBlock.className = 'bubble-text';
+  textBlock.innerHTML = escapeHtml(msg.text || '');
+  bubble.appendChild(textBlock);
 
   shell.body.appendChild(bubble);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
@@ -652,9 +656,12 @@ function renderImageMessage(container, msg) {
   if (!/^https?:\/\//i.test(imageUrl)) return;
 
   const shell = buildReplyShell(container, msg, isMine);
-  renderReplyQuote(shell.body, msg.replyTo);
+  const bubble = document.createElement('div');
+  bubble.className = `${isMine ? 'bubble-me' : 'bubble-other'} bubble-image`;
+  renderReplyQuote(bubble, msg.replyTo);
+
   const btn = document.createElement('button');
-  btn.className = `${isMine ? 'bubble-me' : 'bubble-other'} bubble-image img-btn`;
+  btn.className = 'img-btn bubble-media-btn';
   btn.setAttribute('data-img', encodeURIComponent(imageUrl));
 
   const img = document.createElement('img');
@@ -663,8 +670,9 @@ function renderImageMessage(container, msg) {
   img.alt = `Imagen enviada por ${msg.sender || 'usuario'}`;
   img.loading = 'lazy';
   btn.appendChild(img);
+  bubble.appendChild(btn);
 
-  shell.body.appendChild(btn);
+  shell.body.appendChild(bubble);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
   shell.body.appendChild(shell.replyBtn);
 }
@@ -674,13 +682,13 @@ function renderStickerMessage(container, msg) {
   const stickerUrl = String(msg.stickerUrl || '');
   if (!/^https?:\/\//i.test(stickerUrl)) return;
 
-  const shell = buildReplyShell(container, msg, isMine, true);
-  renderReplyQuote(shell.body, msg.replyTo);
-  const wrap = document.createElement('div');
-  wrap.className = 'sticker-wrap';
+  const shell = buildReplyShell(container, msg, isMine);
+  const bubble = document.createElement('div');
+  bubble.className = `${isMine ? 'bubble-me' : 'bubble-other'} bubble-sticker`;
+  renderReplyQuote(bubble, msg.replyTo);
 
   const btn = document.createElement('button');
-  btn.className = 'sticker-btn img-btn';
+  btn.className = 'sticker-btn img-btn bubble-media-btn';
   btn.setAttribute('data-img', encodeURIComponent(stickerUrl));
   btn.setAttribute('data-sticker-url', encodeURIComponent(stickerUrl));
   btn.setAttribute('data-sticker-sender', msg.sender || '');
@@ -695,8 +703,8 @@ function renderStickerMessage(container, msg) {
   img.loading = 'lazy';
   btn.appendChild(img);
 
-  wrap.appendChild(btn);
-  shell.body.appendChild(wrap);
+  bubble.appendChild(btn);
+  shell.body.appendChild(bubble);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
   shell.body.appendChild(shell.replyBtn);
 }
