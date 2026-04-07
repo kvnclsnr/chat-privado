@@ -17,6 +17,9 @@ const state = {
   renderedMsgIds: new Set(),
   activeReplyTo: null,
   replyCollapseTimer: null,
+  unsubUserStickers: null,
+  savedStickers: [],
+  stickerPanelOpen: false,
   stickerStudio: {
     sourceImg: null,
     xPct: 50,
@@ -142,7 +145,13 @@ document.getElementById('btn-leave').addEventListener('click', leaveChat);
 document.getElementById('sb').addEventListener('click', sendMessage);
 document.getElementById('ab').addEventListener('click', () => document.getElementById('fi').click());
 document.getElementById('fi').addEventListener('change', onImageSelected);
-document.getElementById('btn-sticker').addEventListener('click', openStickerStudio);
+document.getElementById('btn-sticker').addEventListener('click', openStickerPanel);
+document.getElementById('sticker-panel-close').addEventListener('click', closeStickerPanel);
+document.getElementById('sticker-panel-cancel').addEventListener('click', closeStickerPanel);
+document.getElementById('sticker-panel-create').addEventListener('click', () => {
+  closeStickerPanel();
+  openStickerStudio();
+});
 document.getElementById('sticker-close').addEventListener('click', closeStickerStudio);
 document.getElementById('sticker-cancel').addEventListener('click', closeStickerStudio);
 document.getElementById('sticker-file').addEventListener('change', onStickerFileSelected);
@@ -284,6 +293,12 @@ function enterChat() {
     const kickedBy = String(kickedState.kickedBy || 'moderador');
     forceLeaveFromKick(`Has sido expulsado de la sala por ${kickedBy}.`);
   });
+  if (state.userId) {
+    state.unsubUserStickers = DB.onUserStickers(state.userId, stickers => {
+      state.savedStickers = stickers.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+      renderSavedStickerGrid();
+    });
+  }
 }
 
 async function leaveChat(options = {}) {
@@ -291,6 +306,7 @@ async function leaveChat(options = {}) {
   if (state.unsubMsgs) { state.unsubMsgs(); state.unsubMsgs = null; }
   if (state.unsubMembers) { state.unsubMembers(); state.unsubMembers = null; }
   if (state.unsubKick) { state.unsubKick(); state.unsubKick = null; }
+  if (state.unsubUserStickers) { state.unsubUserStickers(); state.unsubUserStickers = null; }
 
   if (state.rid && state.sid) {
     try {
@@ -311,9 +327,12 @@ async function leaveChat(options = {}) {
   state.activeReplyTo = null;
   state.members = [];
   state.membersPanelOpen = false;
+  state.savedStickers = [];
+  state.stickerPanelOpen = false;
 
   document.getElementById('msgs').innerHTML = '';
   closeMembersPanel();
+  closeStickerPanel();
   goTo('home');
 }
 
@@ -501,6 +520,11 @@ function renderStickerMessage(container, msg) {
   const btn = document.createElement('button');
   btn.className = 'sticker-btn img-btn';
   btn.setAttribute('data-img', encodeURIComponent(stickerUrl));
+  btn.setAttribute('data-sticker-url', encodeURIComponent(stickerUrl));
+  btn.setAttribute('data-sticker-sender', msg.sender || '');
+  btn.setAttribute('data-sticker-msgid', msg.id || '');
+  btn.setAttribute('data-sticker-mine', isMine ? '1' : '0');
+  btn.setAttribute('data-sticker-meta', encodeURIComponent(JSON.stringify(msg.stickerMeta || {})));
 
   const img = document.createElement('img');
   img.className = 'chat-sticker';
@@ -816,6 +840,77 @@ function openStickerStudio() {
   renderStickerPreview();
 }
 
+function openStickerPanel() {
+  const modal = document.getElementById('sticker-panel');
+  modal.hidden = false;
+  state.stickerPanelOpen = true;
+  requestAnimationFrame(() => modal.classList.add('open'));
+  renderSavedStickerGrid();
+}
+
+function closeStickerPanel() {
+  const modal = document.getElementById('sticker-panel');
+  if (!modal) return;
+  state.stickerPanelOpen = false;
+  modal.classList.remove('open');
+  setTimeout(() => { modal.hidden = true; }, 140);
+}
+
+function renderSavedStickerGrid() {
+  const grid = document.getElementById('saved-stickers-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!state.savedStickers.length) {
+    const empty = document.createElement('div');
+    empty.className = 'saved-sticker-empty';
+    empty.textContent = 'Aún no tienes stickers guardados.';
+    grid.appendChild(empty);
+    return;
+  }
+
+  state.savedStickers.forEach(item => {
+    if (!item.stickerUrl) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'saved-sticker-item';
+    btn.title = 'Enviar sticker';
+    btn.addEventListener('click', () => sendSavedSticker(item));
+
+    const img = document.createElement('img');
+    img.src = item.stickerUrl;
+    img.alt = `Sticker guardado de ${item.sender || item.lastSender || 'usuario'}`;
+    img.loading = 'lazy';
+    btn.appendChild(img);
+    grid.appendChild(btn);
+  });
+}
+
+async function sendSavedSticker(item) {
+  if (!state.rid || !item || !item.stickerUrl) return;
+  try {
+    const msg = {
+      type: 'sticker',
+      stickerUrl: item.stickerUrl,
+      stickerMeta: item.stickerMeta || {
+        w: STICKER_LIMITS.outputSize,
+        h: STICKER_LIMITS.outputSize,
+        size: 1,
+        mime: 'image/webp'
+      },
+      sender: state.me,
+      ts: Date.now()
+    };
+    if (state.activeReplyTo) msg.replyTo = { ...state.activeReplyTo };
+    validateOutgoingMessage(msg);
+    await DB.sendMessage(state.rid, msg);
+    clearActiveReply();
+    closeStickerPanel();
+  } catch (err) {
+    console.error('Error al enviar sticker guardado:', err);
+    showChatError('No se pudo enviar el sticker guardado.');
+  }
+}
+
 function closeStickerStudio() {
   const modal = document.getElementById('sticker-studio');
   modal.classList.remove('open');
@@ -939,12 +1034,15 @@ async function exportStickerAndSend() {
     clearActiveReply();
 
     if (state.userId) {
-      await DB.saveRecentSticker(state.userId, {
+      const shouldSave = window.confirm('¿Guardar este sticker?');
+      if (shouldSave) await DB.saveStickerForUser(state.userId, {
         stickerUrl: upload.downloadURL,
         stickerMeta: msg.stickerMeta,
+        hash: await hashStickerBlob(sticker.blob),
         sender: state.me,
-        ts: msg.ts
-      }, STICKER_LIMITS.recentLimit);
+        ts: msg.ts,
+        saveSource: 'created'
+      });
     }
 
     closeStickerStudio();
@@ -1048,6 +1146,12 @@ function canvasToBlob(canvas, type, quality) {
   });
 }
 
+async function hashStickerBlob(blob) {
+  const data = await blob.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 function autoResizeTextarea(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 96) + 'px';
@@ -1081,11 +1185,84 @@ document.addEventListener('click', function (e) {
   openImageViewer(src);
 });
 
+let stickerLongPressTimer = null;
+document.addEventListener('pointerdown', function (e) {
+  const stickerBtn = e.target.closest('.sticker-btn');
+  if (!stickerBtn) return;
+  stickerLongPressTimer = setTimeout(() => {
+    maybeSaveStickerFromButton(stickerBtn);
+  }, 520);
+});
+document.addEventListener('pointerup', function () {
+  if (!stickerLongPressTimer) return;
+  clearTimeout(stickerLongPressTimer);
+  stickerLongPressTimer = null;
+});
+document.addEventListener('pointercancel', function () {
+  if (!stickerLongPressTimer) return;
+  clearTimeout(stickerLongPressTimer);
+  stickerLongPressTimer = null;
+});
+document.addEventListener('contextmenu', function (e) {
+  const stickerBtn = e.target.closest('.sticker-btn');
+  if (!stickerBtn) return;
+  e.preventDefault();
+  maybeSaveStickerFromButton(stickerBtn);
+});
+
+async function maybeSaveStickerFromButton(buttonEl) {
+  if (!state.userId || !buttonEl) return;
+  if (buttonEl.getAttribute('data-sticker-mine') === '1') return;
+  const rawUrl = decodeURIComponent(buttonEl.getAttribute('data-sticker-url') || '');
+  if (!rawUrl) return;
+  const confirmed = window.confirm('¿Guardar este sticker?');
+  if (!confirmed) return;
+
+  try {
+    const hash = await hashString(rawUrl);
+    const metaRaw = decodeURIComponent(buttonEl.getAttribute('data-sticker-meta') || '%7B%7D');
+    const parsedMeta = safeParseStickerMeta(metaRaw);
+    await DB.saveStickerForUser(state.userId, {
+      stickerUrl: rawUrl,
+      hash,
+      stickerMeta: parsedMeta,
+      sender: buttonEl.getAttribute('data-sticker-sender') || null,
+      ts: Date.now(),
+      saveSource: 'received'
+    });
+  } catch (err) {
+    console.error('Error guardando sticker recibido:', err);
+    showChatError('No se pudo guardar el sticker.');
+  }
+}
+
+async function hashString(value) {
+  const bytes = new TextEncoder().encode(String(value || ''));
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function safeParseStickerMeta(raw) {
+  try {
+    const meta = JSON.parse(raw);
+    if (!meta || typeof meta !== 'object') throw new Error('invalid');
+    return {
+      w: Number(meta.w) || STICKER_LIMITS.outputSize,
+      h: Number(meta.h) || STICKER_LIMITS.outputSize,
+      size: Number(meta.size) || 1,
+      mime: String(meta.mime || 'image/webp')
+    };
+  } catch (_) {
+    return { w: STICKER_LIMITS.outputSize, h: STICKER_LIMITS.outputSize, size: 1, mime: 'image/webp' };
+  }
+}
+
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     const overlay = document.getElementById('img-viewer');
     if (overlay) overlay.classList.remove('open');
     closeStickerStudio();
+    closeStickerPanel();
   }
 });
 
