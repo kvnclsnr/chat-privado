@@ -647,7 +647,6 @@ function renderTextMessage(container, msg) {
 
   shell.body.appendChild(bubble);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
-  shell.body.appendChild(shell.replyBtn);
 }
 
 function renderImageMessage(container, msg) {
@@ -674,7 +673,6 @@ function renderImageMessage(container, msg) {
 
   shell.body.appendChild(bubble);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
-  shell.body.appendChild(shell.replyBtn);
 }
 
 function renderStickerMessage(container, msg) {
@@ -706,7 +704,6 @@ function renderStickerMessage(container, msg) {
   bubble.appendChild(btn);
   shell.body.appendChild(bubble);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
-  shell.body.appendChild(shell.replyBtn);
 }
 
 function renderReplyQuote(body, replyTo) {
@@ -753,10 +750,16 @@ function buildReplyShell(container, msg, isMine, extraStickerClass = false) {
   content.appendChild(swipeTrack);
 
   const replyBtn = createReplyButton(msg, isMine);
-  container.appendChild(content);
+  if (isMine) {
+    container.appendChild(replyBtn);
+    container.appendChild(content);
+  } else {
+    container.appendChild(content);
+    container.appendChild(replyBtn);
+  }
 
   attachSwipeReply(swipeTrack, msg);
-  return { content, body, replyBtn };
+  return { content, body };
 }
 
 function createReplyButton(msg, isMine) {
