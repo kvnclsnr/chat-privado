@@ -38,8 +38,8 @@ const STICKER_LIMITS = {
 
 const ALLOWED_MESSAGE_KEYS = {
   text: ['type', 'sender', 'text', 'ts', 'replyTo'],
-  image: ['type', 'sender', 'imageUrl', 'imageMeta', 'ts'],
-  sticker: ['type', 'sender', 'stickerUrl', 'stickerMeta', 'ts'],
+  image: ['type', 'sender', 'imageUrl', 'imageMeta', 'ts', 'replyTo'],
+  sticker: ['type', 'sender', 'stickerUrl', 'stickerMeta', 'ts', 'replyTo'],
   sys: ['type', 'text', 'ts']
 };
 
@@ -59,6 +59,13 @@ function generateUserId(name) {
   let hash = 5381;
   for (let i = 0; i < clean.length; i++) hash = ((hash << 5) + hash) + clean.charCodeAt(i);
   return `u_${Math.abs(hash).toString(36)}`;
+}
+
+async function hashAccessCode(code) {
+  const normalized = String(code || '').trim();
+  const bytes = new TextEncoder().encode(normalized);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 function escapeHtml(text) {
@@ -153,7 +160,13 @@ async function handleCreate() {
   if (!code) return showError('c-er', 'Define un código de acceso');
 
   const roomId = generateRoomId();
-  const roomData = { name: roomName, code, maxUsers, createdBy: myName, createdAt: Date.now() };
+  const roomData = {
+    name: roomName,
+    codeHash: await hashAccessCode(code),
+    maxUsers,
+    createdBy: myName,
+    createdAt: Date.now()
+  };
 
   try {
     await DB.createRoom(roomId, roomData);
@@ -197,7 +210,9 @@ async function handleJoin() {
   }
 
   if (!room) return showError('j-er', 'Sala no encontrada — verifica el ID');
-  if (room.code !== code) return showError('j-er', 'Código de acceso incorrecto');
+  const incomingCodeHash = await hashAccessCode(code);
+  if (room.codeHash && room.codeHash !== incomingCodeHash) return showError('j-er', 'Código de acceso incorrecto');
+  if (!room.codeHash && room.code !== code) return showError('j-er', 'Código de acceso incorrecto');
 
   const count = await DB.getMemberCount(roomId);
   if (count >= room.maxUsers) return showError('j-er', `Sala llena (${count}/${room.maxUsers} usuarios)`);
@@ -408,16 +423,19 @@ function validateOutgoingMessage(msg) {
   const keys = Object.keys(msg);
   if (keys.some(k => !allowed.includes(k))) throw new Error('Campos no esperados en payload');
 
+  function validateReplyTo(replyTo) {
+    if (!replyTo) return;
+    const rt = replyTo;
+    if (typeof rt !== 'object' || typeof rt.id !== 'string' || typeof rt.sender !== 'string' || typeof rt.textPreview !== 'string') {
+      throw new Error('replyTo inválido');
+    }
+    if (rt.id.length > 120 || rt.sender.length > 40 || rt.textPreview.length > 120) throw new Error('replyTo excede límites');
+  }
+
   if (msg.type === 'text') {
     if (!msg.sender || typeof msg.sender !== 'string' || msg.sender.length > 24) throw new Error('Remitente inválido');
     if (!msg.text || typeof msg.text !== 'string' || msg.text.length > 1800) throw new Error('Texto inválido');
-    if (msg.replyTo) {
-      const rt = msg.replyTo;
-      if (typeof rt !== 'object' || typeof rt.id !== 'string' || typeof rt.sender !== 'string' || typeof rt.textPreview !== 'string') {
-        throw new Error('replyTo inválido');
-      }
-      if (rt.id.length > 120 || rt.sender.length > 40 || rt.textPreview.length > 120) throw new Error('replyTo excede límites');
-    }
+    validateReplyTo(msg.replyTo);
   }
 
   if (msg.type === 'image') {
@@ -425,6 +443,7 @@ function validateOutgoingMessage(msg) {
     const m = msg.imageMeta || {};
     if (!m.w || !m.h || !m.size || !m.mime) throw new Error('Meta de imagen incompleta');
     if (m.size > IMAGE_LIMITS.maxUploadBytes * 1.5) throw new Error('Imagen excede límite');
+    validateReplyTo(msg.replyTo);
   }
 
   if (msg.type === 'sticker') {
@@ -433,6 +452,7 @@ function validateOutgoingMessage(msg) {
     if (!m.w || !m.h || !m.size || !m.mime) throw new Error('Meta de sticker incompleta');
     if (m.size > STICKER_LIMITS.maxUploadBytes * 1.6) throw new Error('Sticker excede límite');
     if (m.w > 1024 || m.h > 1024) throw new Error('Sticker excede dimensiones permitidas');
+    validateReplyTo(msg.replyTo);
   }
 
   if (typeof msg.ts !== 'number' || msg.ts < 1700000000000 || msg.ts > Date.now() + 2 * 60 * 1000) {
@@ -500,9 +520,11 @@ async function onImageSelected(e) {
       sender: state.me,
       ts: Date.now()
     };
+    if (state.activeReplyTo) msg.replyTo = { ...state.activeReplyTo };
 
     validateOutgoingMessage(msg);
     await DB.sendMessageWithId(state.rid, messageId, msg);
+    clearActiveReply();
   } catch (err) {
     console.error('Error al subir imagen:', err);
     showChatError('No se pudo enviar la imagen. Intenta con otra más liviana.');
@@ -635,9 +657,11 @@ async function exportStickerAndSend() {
       sender: state.me,
       ts: Date.now()
     };
+    if (state.activeReplyTo) msg.replyTo = { ...state.activeReplyTo };
 
     validateOutgoingMessage(msg);
     await DB.sendMessageWithId(state.rid, messageId, msg);
+    clearActiveReply();
 
     if (state.userId) {
       await DB.saveRecentSticker(state.userId, {
