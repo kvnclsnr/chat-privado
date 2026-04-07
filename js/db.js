@@ -99,6 +99,21 @@ const DB = {
     await _db.ref(`members/${roomId}/${sessionId}`).remove();
   },
 
+  kickMember: async function (roomId, targetSessionId, kickedMark) {
+    const updates = {};
+    updates[`members/${roomId}/${targetSessionId}`] = null;
+    updates[`kicked/${roomId}/${targetSessionId}`] = kickedMark;
+    await _db.ref().update(updates);
+  },
+
+  onKickState: function (roomId, sessionId, callback) {
+    const ref = _db.ref(`kicked/${roomId}/${sessionId}`);
+    ref.on('value', function (snap) {
+      callback(snap.val());
+    });
+    return function () { ref.off('value'); };
+  },
+
   onMembers: function (roomId, callback) {
     const ref = _db.ref(`members/${roomId}`);
 
