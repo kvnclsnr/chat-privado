@@ -323,8 +323,23 @@ async function handleJoin() {
   if (await DB.isNameTaken(roomId, name)) return showError('j-er', 'Ese nombre ya está en uso en esta sala');
 
   const userKey = generateUserId(name);
-  const banState = await DB.getBan(roomId, userKey);
-  if (banState) {
+  let banState = null;
+  try {
+    banState = await DB.getBan(roomId, userKey);
+  } catch (err) {
+    const code = String(err?.code || '').toLowerCase();
+    const message = String(err?.message || '').toLowerCase();
+    const isPermissionDenied = code.includes('permission_denied') || message.includes('permission_denied');
+    if (isPermissionDenied) {
+      console.warn('[join] No se pudo verificar ban por permisos. Continuando sin ban temporal.', err);
+      showError('j-er', 'Aviso: no se pudo validar estado de ban (permisos). Entrando con validación temporal.');
+    } else {
+      console.error('[join] Error al verificar ban:', err);
+      return showError('j-er', 'No se pudo validar el estado de ban. Intenta de nuevo.');
+    }
+  }
+
+  if (banState && typeof banState === 'object') {
     const reason = String(banState.reason || '').trim();
     const reasonSuffix = reason ? ` Motivo: ${reason}` : '';
     return showError('j-er', `No puedes entrar: estás baneado de esta sala.${reasonSuffix}`);
@@ -336,8 +351,20 @@ async function handleJoin() {
   state.sid = generateSessionId();
   state.userId = userKey;
 
-  state.memberRef = await DB.joinRoom(roomId, state.sid, name, state.userId);
-  await DB.postSystemMessage(roomId, `${name} se unió`);
+  try {
+    state.memberRef = await DB.joinRoom(roomId, state.sid, name, state.userId);
+  } catch (err) {
+    console.error('[join] Error al unirse a la sala:', err);
+    return showError('j-er', 'No se pudo completar el ingreso a la sala. Intenta nuevamente.');
+  }
+
+  try {
+    await DB.postSystemMessage(roomId, `${name} se unió`);
+  } catch (err) {
+    console.error('[join] Error al publicar mensaje de sistema:', err);
+    showError('j-er', 'Entraste a la sala, pero no se pudo publicar el mensaje de sistema.');
+  }
+
   enterChat();
 }
 
