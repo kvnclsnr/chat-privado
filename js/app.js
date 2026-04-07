@@ -11,6 +11,8 @@ const state = {
   memberRef: null,
   unsubMsgs: null,
   unsubMembers: null,
+  members: [],
+  membersPanelOpen: false,
   renderedMsgIds: new Set(),
   activeReplyTo: null,
   replyCollapseTimer: null,
@@ -161,6 +163,15 @@ document.getElementById('mi').addEventListener('focus', cancelReplyAutoCollapse)
 document.getElementById('mi').addEventListener('blur', scheduleReplyAutoCollapse);
 
 document.getElementById('reply-cancel').addEventListener('click', clearActiveReply);
+document.getElementById('members-pill').addEventListener('click', toggleMembersPanel);
+document.getElementById('members-close').addEventListener('click', closeMembersPanel);
+document.getElementById('s-chat').addEventListener('click', evt => {
+  if (!state.membersPanelOpen) return;
+  const panel = document.getElementById('members-panel');
+  const pill = document.getElementById('members-pill');
+  if (panel.contains(evt.target) || pill.contains(evt.target)) return;
+  closeMembersPanel();
+});
 
 async function handleCreate() {
   const myName = document.getElementById('c-me').value.trim();
@@ -263,7 +274,9 @@ function enterChat() {
 
   state.unsubMsgs = DB.onMessages(state.rid, renderMessages);
   state.unsubMembers = DB.onMembers(state.rid, members => {
+    state.members = members;
     document.getElementById('ch-cnt').textContent = members.length;
+    renderMembersPanel();
   });
 }
 
@@ -288,9 +301,75 @@ async function leaveChat() {
   state.userId = null;
   state.memberRef = null;
   state.activeReplyTo = null;
+  state.members = [];
+  state.membersPanelOpen = false;
 
   document.getElementById('msgs').innerHTML = '';
+  closeMembersPanel();
   goTo('home');
+}
+
+function toggleMembersPanel() {
+  if (state.membersPanelOpen) {
+    closeMembersPanel();
+    return;
+  }
+  state.membersPanelOpen = true;
+  const panel = document.getElementById('members-panel');
+  const pill = document.getElementById('members-pill');
+  panel.hidden = false;
+  pill.classList.add('is-open');
+  pill.setAttribute('aria-expanded', 'true');
+  renderMembersPanel();
+}
+
+function closeMembersPanel() {
+  state.membersPanelOpen = false;
+  const panel = document.getElementById('members-panel');
+  const pill = document.getElementById('members-pill');
+  panel.hidden = true;
+  pill.classList.remove('is-open');
+  pill.setAttribute('aria-expanded', 'false');
+}
+
+function renderMembersPanel() {
+  const list = document.getElementById('members-list');
+  const creator = String(state.room?.createdBy || '').trim();
+  list.innerHTML = '';
+
+  state.members
+    .slice()
+    .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0))
+    .forEach(member => {
+      const row = document.createElement('div');
+      row.className = 'member-row';
+      row.dataset.sessionId = member.sessionId || '';
+
+      const nameWrap = document.createElement('div');
+      nameWrap.className = 'member-name-wrap';
+
+      const dot = document.createElement('span');
+      dot.className = 'member-online-dot';
+      dot.setAttribute('aria-hidden', 'true');
+
+      const name = document.createElement('span');
+      name.className = 'member-name';
+      name.textContent = member.name || 'Usuario';
+
+      nameWrap.appendChild(dot);
+      nameWrap.appendChild(name);
+
+      row.appendChild(nameWrap);
+
+      if ((member.name || '').trim() === creator) {
+        const badge = document.createElement('span');
+        badge.className = 'member-creator-tag';
+        badge.textContent = 'Creador';
+        row.appendChild(badge);
+      }
+
+      list.appendChild(row);
+    });
 }
 
 function renderMessages(msgs) {

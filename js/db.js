@@ -104,7 +104,12 @@ const DB = {
 
     ref.on('value', function (snap) {
       const members = [];
-      snap.forEach(function (child) { members.push(child.val()); });
+      snap.forEach(function (child) {
+        members.push({
+          sessionId: child.key,
+          ...child.val()
+        });
+      });
       callback(members);
     });
 

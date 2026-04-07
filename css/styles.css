@@ -345,6 +345,12 @@ h2 {
   display: flex;
   align-items: center;
   gap: 5px;
+  cursor: pointer;
+}
+
+.pill.is-open {
+  border-color: rgba(0, 122, 255, 0.55);
+  background: rgba(0, 122, 255, 0.18);
 }
 
 .dot {
@@ -367,6 +373,82 @@ h2 {
 }
 
 .leave-btn:hover { color: #FF453A; }
+
+.members-panel {
+  margin: 10px 14px 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.members-panel-head {
+  padding: 9px 11px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+.members-close {
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.56);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.members-list {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 11px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+
+.member-row:last-child {
+  border-bottom: none;
+}
+
+.member-name-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.member-online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #30D158;
+  box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.14);
+}
+
+.member-name {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-creator-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7ec0ff;
+  background: rgba(0, 122, 255, 0.15);
+  border: 0.5px solid rgba(0, 122, 255, 0.35);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
 
 /* ── Messages list ──────────────────────────────────────────── */
 #msgs {
