@@ -751,16 +751,16 @@ function buildReplyShell(container, msg, isMine, extraStickerClass = false) {
   swipeTrack.appendChild(body);
   content.appendChild(swipeTrack);
 
-  const replyBtn = createReplyButton(msg);
+  const replyBtn = createReplyButton(msg, isMine);
   container.appendChild(content);
 
   attachSwipeReply(swipeTrack, msg);
   return { content, body, replyBtn };
 }
 
-function createReplyButton(msg) {
+function createReplyButton(msg, isMine) {
   const btn = document.createElement('button');
-  btn.className = 'msg-reply-icon';
+  btn.className = `msg-reply-icon ${isMine ? 'msg-reply-icon-me' : 'msg-reply-icon-other'}`;
   btn.type = 'button';
   btn.setAttribute('aria-label', `Responder a ${msg.sender || 'mensaje'}`);
   btn.title = 'Responder';

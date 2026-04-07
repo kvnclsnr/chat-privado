@@ -617,8 +617,8 @@ h2 {
 }
 
 .msg-reply-icon {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   border: 0.5px solid rgba(255, 255, 255, 0.18);
   background: rgba(8, 10, 20, 0.5);
@@ -627,24 +627,39 @@ h2 {
   align-items: center;
   justify-content: center;
   position: absolute;
-  right: -8px;
-  bottom: -6px;
+  top: 50%;
+  transform: translateY(-50%);
   cursor: pointer;
   flex-shrink: 0;
-  opacity: 0.72;
+  opacity: 0.58;
   z-index: 3;
   box-shadow: 0 2px 8px rgba(2, 7, 21, 0.45);
-  transition: opacity 0.14s ease, transform 0.14s ease;
+  transition: opacity 0.14s ease, transform 0.14s ease, background-color 0.14s ease;
+}
+
+.msg-reply-icon-me {
+  left: -30px;
+}
+
+.msg-reply-icon-other {
+  right: -30px;
+}
+
+.msg-reply-icon:hover {
+  opacity: 0.92;
+  background: rgba(8, 10, 20, 0.66);
+  transform: translateY(-50%) scale(1.04);
 }
 
 .msg-reply-icon:focus-visible {
   opacity: 1;
+  transform: translateY(-50%) scale(1.04);
   outline: 2px solid rgba(0, 122, 255, 0.82);
   outline-offset: 2px;
 }
 
 .msg-reply-icon:active {
-  transform: scale(0.93);
+  transform: translateY(-50%) scale(0.94);
 }
 
 .bubble-image {
