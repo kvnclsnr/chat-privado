@@ -479,6 +479,7 @@ function renderMessages(msgs) {
 function renderTextMessage(container, msg) {
   const isMine = msg.sender === state.me;
   const shell = buildReplyShell(container, msg, isMine);
+  renderReplyQuote(shell.body, msg.replyTo);
   const bubble = document.createElement('div');
   bubble.className = isMine ? 'bubble-me' : 'bubble-other';
   bubble.innerHTML = escapeHtml(msg.text || '');
@@ -493,6 +494,7 @@ function renderImageMessage(container, msg) {
   if (!/^https?:\/\//i.test(imageUrl)) return;
 
   const shell = buildReplyShell(container, msg, isMine);
+  renderReplyQuote(shell.body, msg.replyTo);
   const btn = document.createElement('button');
   btn.className = `${isMine ? 'bubble-me' : 'bubble-other'} bubble-image img-btn`;
   btn.setAttribute('data-img', encodeURIComponent(imageUrl));
@@ -514,6 +516,7 @@ function renderStickerMessage(container, msg) {
   if (!/^https?:\/\//i.test(stickerUrl)) return;
 
   const shell = buildReplyShell(container, msg, isMine, true);
+  renderReplyQuote(shell.body, msg.replyTo);
   const wrap = document.createElement('div');
   wrap.className = 'sticker-wrap';
 
@@ -536,6 +539,28 @@ function renderStickerMessage(container, msg) {
   wrap.appendChild(btn);
   shell.body.appendChild(wrap);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
+}
+
+function renderReplyQuote(body, replyTo) {
+  if (!replyTo || typeof replyTo !== 'object') return;
+  const sender = String(replyTo.sender || '').trim();
+  const preview = String(replyTo.textPreview || '').trim();
+  if (!sender && !preview) return;
+
+  const quote = document.createElement('div');
+  quote.className = 'reply-quote';
+
+  const senderEl = document.createElement('div');
+  senderEl.className = 'reply-quote-sender';
+  senderEl.textContent = sender || 'Usuario';
+
+  const previewEl = document.createElement('div');
+  previewEl.className = 'reply-quote-text';
+  previewEl.textContent = preview || '(sin vista previa)';
+
+  quote.appendChild(senderEl);
+  quote.appendChild(previewEl);
+  body.appendChild(quote);
 }
 
 function buildReplyShell(container, msg, isMine, extraStickerClass = false) {

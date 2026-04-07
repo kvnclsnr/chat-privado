@@ -517,6 +517,8 @@ h2 {
   justify-content: flex-end;
   gap: 8px;
   margin: 3px 14px;
+  width: calc(100% - 28px);
+  min-width: 0;
 }
 
 .msg-row-other {
@@ -524,9 +526,13 @@ h2 {
   align-items: flex-start;
   gap: 8px;
   margin: 3px 14px;
+  width: calc(100% - 28px);
+  min-width: 0;
 }
 
 .msg-content {
+  flex: 1;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -544,6 +550,8 @@ h2 {
 .msg-body {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .msg-body-me {
@@ -625,9 +633,10 @@ h2 {
   background: linear-gradient(160deg, var(--accent), var(--accent-strong));
   border-radius: 20px 20px 5px 20px;
   padding: 10px 14px;
-  max-width: 78%;
+  max-width: min(78%, 100%);
   font-size: 16px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
@@ -636,9 +645,10 @@ h2 {
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px 20px 20px 5px;
   padding: 10px 14px;
-  max-width: 78%;
+  max-width: min(78%, 100%);
   font-size: 16px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
@@ -658,6 +668,8 @@ h2 {
   font-size: 12px;
   opacity: 0.8;
   margin-top: 2px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ── System message ─────────────────────────────────────────── */
@@ -670,8 +682,8 @@ h2 {
 
 /* ── Input area ─────────────────────────────────────────────── */
 .inp-area {
-  margin: 0 10px calc(8px + env(safe-area-inset-bottom));
-  padding: 10px 10px 10px;
+  margin: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  padding: 11px 10px;
   border: 0.5px solid var(--glass-hairline);
   border-radius: 20px;
   background: var(--glass-soft);
