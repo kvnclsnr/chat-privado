@@ -10,17 +10,32 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+:root {
+  --bg-main: #04050b;
+  --bg-app: linear-gradient(160deg, #111424 0%, #0a0c16 52%, #070910 100%);
+  --glass-strong: rgba(18, 24, 44, 0.72);
+  --glass-soft: rgba(20, 26, 46, 0.54);
+  --glass-hairline: rgba(255, 255, 255, 0.2);
+  --text-primary: rgba(255, 255, 255, 0.97);
+  --text-secondary: rgba(235, 243, 255, 0.8);
+  --text-muted: rgba(218, 229, 249, 0.66);
+  --accent: #4f9dff;
+  --accent-strong: #2f7df9;
+  --glass-shadow: 0 22px 44px rgba(2, 6, 20, 0.42), 0 10px 18px rgba(2, 6, 18, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  --spring: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Page */
 html, body {
   height: 100%;
   min-height: 100dvh;
   width: 100%;
-  background: #05050a;
+  background: radial-gradient(130% 90% at 50% 0%, #15203f 0%, var(--bg-main) 55%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  color: #ffffff;
+  color: var(--text-primary);
   overflow: hidden;
 }
 
@@ -31,8 +46,10 @@ html, body {
   height: 100dvh;
   min-height: 100dvh;
   max-height: 720px;
-  background: #08080f;
+  background: var(--bg-app);
   border-radius: 32px;
+  border: 0.5px solid rgba(255, 255, 255, 0.17);
+  box-shadow: 0 32px 90px rgba(2, 7, 21, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -96,7 +113,7 @@ h2 {
 .sub {
   font-size: 15px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--text-muted);
   text-align: center;
   line-height: 1.55;
 }
@@ -117,7 +134,7 @@ h2 {
 }
 
 .btn-p {
-  background: #007AFF;
+  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
   color: #fff;
   border: none;
   border-radius: 14px;
@@ -126,7 +143,7 @@ h2 {
   font-weight: 600;
   cursor: pointer;
   width: 100%;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity var(--spring), transform var(--spring), filter var(--spring), box-shadow var(--spring);
   font-family: inherit;
 }
 
@@ -143,7 +160,7 @@ h2 {
   font-weight: 500;
   cursor: pointer;
   width: 100%;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity var(--spring), transform var(--spring), filter var(--spring), box-shadow var(--spring);
   font-family: inherit;
 }
 
@@ -205,7 +222,7 @@ h2 {
   font-family: inherit;
   width: 100%;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color var(--spring), background-color var(--spring), transform var(--spring), box-shadow var(--spring);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -308,8 +325,14 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(10px + env(safe-area-inset-top)) 18px 12px;
-  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+  margin: calc(8px + env(safe-area-inset-top)) 12px 6px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--glass-hairline);
+  border-radius: 18px;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+  backdrop-filter: blur(20px) saturate(135%);
+  box-shadow: var(--glass-shadow);
   flex-shrink: 0;
 }
 
@@ -324,7 +347,7 @@ h2 {
 .chat-sub {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
@@ -336,21 +359,30 @@ h2 {
 
 /* ── Members pill ───────────────────────────────────────────── */
 .pill {
-  background: rgba(255, 255, 255, 0.09);
-  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(222, 235, 255, 0.08);
+  border: 0.5px solid rgba(232, 241, 255, 0.24);
   border-radius: 100px;
   padding: 4px 10px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(236, 244, 255, 0.88);
   display: flex;
   align-items: center;
   gap: 5px;
   cursor: pointer;
+  transition: transform var(--spring), background-color var(--spring), border-color var(--spring), box-shadow var(--spring);
 }
 
 .pill.is-open {
   border-color: rgba(0, 122, 255, 0.55);
   background: rgba(0, 122, 255, 0.18);
+}
+
+.pill:hover {
+  background: rgba(225, 238, 255, 0.14);
+}
+
+.pill:active {
+  transform: scale(0.96);
 }
 
 .dot {
@@ -364,15 +396,16 @@ h2 {
 .leave-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.58);
   cursor: pointer;
   font-size: 13px;
   font-family: inherit;
   padding: 4px;
-  transition: color 0.2s;
+  transition: color var(--spring), transform var(--spring);
 }
 
 .leave-btn:hover { color: #FF453A; }
+.leave-btn:active { transform: scale(0.95); }
 
 .members-panel {
   margin: 10px 14px 2px;
@@ -395,7 +428,7 @@ h2 {
 .members-close {
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.56);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 13px;
 }
@@ -589,7 +622,7 @@ h2 {
 
 /* ── Bubbles ────────────────────────────────────────────────── */
 .bubble-me {
-  background: #007AFF;
+  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
   border-radius: 20px 20px 5px 20px;
   padding: 10px 14px;
   max-width: 78%;
@@ -637,8 +670,14 @@ h2 {
 
 /* ── Input area ─────────────────────────────────────────────── */
 .inp-area {
-  padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
-  border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+  margin: 0 10px calc(8px + env(safe-area-inset-bottom));
+  padding: 10px 10px 10px;
+  border: 0.5px solid var(--glass-hairline);
+  border-radius: 20px;
+  background: var(--glass-soft);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--glass-shadow);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -707,8 +746,8 @@ h2 {
 
 #mi {
   flex: 1;
-  background: rgba(255, 255, 255, 0.07);
-  border: 0.5px solid rgba(255, 255, 255, 0.13);
+  background: rgba(235, 244, 255, 0.11);
+  border: 0.5px solid rgba(255, 255, 255, 0.24);
   border-radius: 22px;
   color: #fff;
   padding: 10px 16px;
@@ -719,7 +758,7 @@ h2 {
   max-height: 96px;
   overflow-y: auto;
   line-height: 1.4;
-  transition: border-color 0.2s;
+  transition: border-color var(--spring), background-color var(--spring), transform var(--spring), box-shadow var(--spring);
   -webkit-appearance: none;
   appearance: none;
   field-sizing: fixed;
@@ -729,9 +768,9 @@ h2 {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  background: rgba(225, 236, 255, 0.12);
+  color: #f5f9ff;
+  border: 0.5px solid rgba(232, 241, 255, 0.3);
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
@@ -739,6 +778,7 @@ h2 {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: transform var(--spring), background-color var(--spring), border-color var(--spring), box-shadow var(--spring);
 }
 
 .attach-btn:disabled {
@@ -746,27 +786,49 @@ h2 {
   cursor: default;
 }
 
+.attach-btn:hover:not(:disabled) {
+  background: rgba(227, 238, 255, 0.18);
+  border-color: rgba(232, 241, 255, 0.42);
+}
+
+.attach-btn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.attach-btn:focus-visible,
+#sb:focus-visible,
+.pill:focus-visible,
+.leave-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 157, 255, 0.3);
+}
+
 #mi::-webkit-scrollbar {
   width: 0; /* Oculta scrollbar */
   background: transparent;
 }
 
-#mi::placeholder { color: rgba(255, 255, 255, 0.3); }
-#mi:focus        { border-color: rgba(0, 122, 255, 0.5); }
+#mi::placeholder { color: rgba(238, 245, 255, 0.62); }
+#mi:hover        { background: rgba(237, 246, 255, 0.16); }
+#mi:focus        {
+  border-color: rgba(79, 157, 255, 0.88);
+  box-shadow: 0 0 0 3px rgba(79, 157, 255, 0.2);
+}
 
 /* ── Send button ────────────────────────────────────────────── */
 #sb {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #007AFF;
+  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity var(--spring), transform var(--spring), filter var(--spring), box-shadow var(--spring);
   flex-shrink: 0;
+  box-shadow: 0 10px 20px rgba(43, 122, 248, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 #sb:disabled {
@@ -774,8 +836,8 @@ h2 {
   cursor: default;
 }
 
-#sb:hover:not(:disabled)  { opacity: 0.9; }
-#sb:active:not(:disabled) { transform: scale(0.88); }
+#sb:hover:not(:disabled)  { opacity: 1; filter: brightness(1.06); transform: translateY(-1px); }
+#sb:active:not(:disabled) { transform: scale(0.9); }
 
 .img-viewer {
   position: fixed;
@@ -837,8 +899,7 @@ h2 {
 
   .screen-head,
   .sc,
-  .chat-hdr,
-  .inp-area {
+  .chat-hdr {
     padding-left: 12px;
     padding-right: 12px;
   }
@@ -885,8 +946,7 @@ h2 {
   }
 
   .chat-hdr {
-    padding-top: calc(6px + env(safe-area-inset-top));
-    padding-bottom: 8px;
+    margin-top: calc(6px + env(safe-area-inset-top));
   }
 
   #msgs {
@@ -1036,4 +1096,12 @@ h2 {
   color: rgba(255,255,255,0.62);
   text-align: center;
   padding: 20px 10px;
+}
+
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .chat-hdr,
+  .inp-area {
+    background: #121827;
+  }
 }
