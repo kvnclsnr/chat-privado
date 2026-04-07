@@ -124,6 +124,7 @@
 
       <div id="msgs"></div>
       <div class="err chat-err" id="ch-er"></div>
+      <div class="chat-status" id="chat-status" hidden></div>
 
       <div class="inp-area">
         <div class="reply-band" id="reply-band" hidden>
@@ -156,6 +157,8 @@
       </div>
       <p class="sticker-sub">Crea sticker PNG/WebP con fondo transparente desde una imagen base + recorte.</p>
       <input id="sticker-file" type="file" accept="image/*" />
+      <button id="sticker-file-btn" class="btn-s sticker-file-btn" type="button">Elegir imagen base</button>
+      <div class="sticker-status" id="sticker-status" hidden></div>
       <canvas id="sticker-preview" width="256" height="256"></canvas>
       <div class="sticker-controls">
         <label>X <input id="sticker-x" type="range" min="0" max="100" value="50" /></label>
@@ -176,6 +179,7 @@
         <button id="sticker-panel-close" class="sticker-close" type="button" aria-label="Cerrar">✕</button>
       </div>
       <div class="saved-stickers-grid" id="saved-stickers-grid"></div>
+      <div class="sticker-status" id="sticker-panel-status" hidden></div>
       <div class="sticker-actions">
         <button id="sticker-panel-create" class="btn-s" type="button">Crear sticker</button>
         <button id="sticker-panel-cancel" class="btn-p" type="button">Cerrar</button>

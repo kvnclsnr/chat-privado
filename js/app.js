@@ -25,7 +25,8 @@ const state = {
     xPct: 50,
     yPct: 50,
     sizePct: 65
-  }
+  },
+  stickerPanelTimeoutId: null
 };
 
 const IMAGE_LIMITS = {
@@ -116,6 +117,49 @@ function showChatError(message) {
   showError('ch-er', message);
 }
 
+function setChatStatus(message) {
+  const el = document.getElementById('chat-status');
+  if (!el) return;
+  if (!message) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  el.textContent = message;
+  el.hidden = false;
+}
+
+function setStickerStatus(message) {
+  const el = document.getElementById('sticker-status');
+  if (!el) return;
+  if (!message) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  el.textContent = message;
+  el.hidden = false;
+}
+
+function setStickerPanelStatus(message, timeoutMs = null) {
+  const el = document.getElementById('sticker-panel-status');
+  if (!el) return;
+  if (state.stickerPanelTimeoutId) {
+    clearTimeout(state.stickerPanelTimeoutId);
+    state.stickerPanelTimeoutId = null;
+  }
+  if (!message) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  el.textContent = message;
+  el.hidden = false;
+  if (timeoutMs) {
+    state.stickerPanelTimeoutId = setTimeout(() => setStickerPanelStatus(''), timeoutMs);
+  }
+}
+
 // ── Eventos UI ──────────────────────────────────────────────
 document.getElementById('btn-create').addEventListener('click', () => goTo('create'));
 document.getElementById('btn-join').addEventListener('click', () => goTo('join'));
@@ -155,6 +199,9 @@ document.getElementById('sticker-panel-create').addEventListener('click', () => 
 document.getElementById('sticker-close').addEventListener('click', closeStickerStudio);
 document.getElementById('sticker-cancel').addEventListener('click', closeStickerStudio);
 document.getElementById('sticker-file').addEventListener('change', onStickerFileSelected);
+document.getElementById('sticker-file-btn').addEventListener('click', () => {
+  document.getElementById('sticker-file').click();
+});
 document.getElementById('sticker-export').addEventListener('click', exportStickerAndSend);
 document.getElementById('sticker-x').addEventListener('input', onStickerCropChange);
 document.getElementById('sticker-y').addEventListener('input', onStickerCropChange);
@@ -279,6 +326,7 @@ function enterChat() {
   document.getElementById('msgs').innerHTML = '';
   state.renderedMsgIds = new Set();
   clearActiveReply();
+  setChatStatus('');
 
   goTo('chat');
 
@@ -331,6 +379,7 @@ async function leaveChat(options = {}) {
   state.stickerPanelOpen = false;
 
   document.getElementById('msgs').innerHTML = '';
+  setChatStatus('');
   closeMembersPanel();
   closeStickerPanel();
   goTo('home');
@@ -829,14 +878,20 @@ async function onImageSelected(e) {
   const attachBtn = document.getElementById('ab');
   attachBtn.disabled = true;
   attachBtn.textContent = '⏳';
+  setChatStatus('Subiendo imagen: comprimiendo…');
 
   try {
     const packed = await compressImage(file, IMAGE_LIMITS);
+    if (packed.strategy === 'fallback') {
+      setChatStatus('Subiendo imagen: compresión reforzada aplicada…');
+    }
     if (packed.blob.size > IMAGE_LIMITS.maxUploadBytes * 1.4) throw new Error('No se redujo suficiente.');
 
     const messageId = DB.createMessageId(state.rid);
+    setChatStatus('Subiendo imagen: enviando a Storage…');
     const upload = await DB.uploadRoomImage(state.rid, messageId, packed.blob, packed.mime);
 
+    setChatStatus('Subiendo imagen: creando mensaje…');
     const msg = {
       type: 'image',
       imageUrl: upload.downloadURL,
@@ -849,9 +904,12 @@ async function onImageSelected(e) {
     validateOutgoingMessage(msg);
     await DB.sendMessageWithId(state.rid, messageId, msg);
     clearActiveReply();
+    setChatStatus('Imagen enviada.');
+    setTimeout(() => setChatStatus(''), 1400);
   } catch (err) {
     console.error('Error al subir imagen:', err);
-    showChatError('No se pudo enviar la imagen. Intenta con otra más liviana.');
+    showChatError(`No se pudo enviar la imagen: ${err.message || 'error desconocido'}.`);
+    setChatStatus('');
   } finally {
     attachBtn.disabled = false;
     attachBtn.textContent = '📎';
@@ -862,6 +920,7 @@ function openStickerStudio() {
   const modal = document.getElementById('sticker-studio');
   modal.hidden = false;
   requestAnimationFrame(() => modal.classList.add('open'));
+  setStickerStatus('Selecciona una imagen para comenzar.');
   renderStickerPreview();
 }
 
@@ -871,12 +930,14 @@ function openStickerPanel() {
   state.stickerPanelOpen = true;
   requestAnimationFrame(() => modal.classList.add('open'));
   renderSavedStickerGrid();
+  setStickerPanelStatus('');
 }
 
 function closeStickerPanel() {
   const modal = document.getElementById('sticker-panel');
   if (!modal) return;
   state.stickerPanelOpen = false;
+  setStickerPanelStatus('');
   modal.classList.remove('open');
   setTimeout(() => { modal.hidden = true; }, 140);
 }
@@ -912,6 +973,10 @@ function renderSavedStickerGrid() {
 
 async function sendSavedSticker(item) {
   if (!state.rid || !item || !item.stickerUrl) return;
+  setStickerPanelStatus('Enviando sticker…');
+  const pendingTimeout = setTimeout(() => {
+    setStickerPanelStatus('Esto está tardando más de lo normal… seguimos intentando.');
+  }, 4200);
   try {
     const msg = {
       type: 'sticker',
@@ -929,15 +994,21 @@ async function sendSavedSticker(item) {
     validateOutgoingMessage(msg);
     await DB.sendMessage(state.rid, msg);
     clearActiveReply();
+    clearTimeout(pendingTimeout);
+    setStickerPanelStatus('Sticker enviado.', 1200);
     closeStickerPanel();
   } catch (err) {
+    clearTimeout(pendingTimeout);
     console.error('Error al enviar sticker guardado:', err);
-    showChatError('No se pudo enviar el sticker guardado.');
+    const reason = err && err.message ? err.message : 'error desconocido';
+    showChatError(`No se pudo enviar el sticker guardado: ${reason}.`);
+    setStickerPanelStatus(`Error al enviar: ${reason}`, 2800);
   }
 }
 
 function closeStickerStudio() {
   const modal = document.getElementById('sticker-studio');
+  setStickerStatus('');
   modal.classList.remove('open');
   setTimeout(() => { modal.hidden = true; }, 140);
 }
@@ -950,6 +1021,7 @@ async function onStickerFileSelected(e) {
   if (file.size > STICKER_LIMITS.maxInputBytes) return showChatError('La imagen base excede 12 MB.');
 
   try {
+    setStickerStatus('Cargando imagen base…');
     const dataUrl = await readFileAsDataURL(file);
     state.stickerStudio.sourceImg = await loadImage(dataUrl);
     state.stickerStudio.xPct = 50;
@@ -957,9 +1029,11 @@ async function onStickerFileSelected(e) {
     state.stickerStudio.sizePct = 65;
     syncStickerSliders();
     renderStickerPreview();
+    setStickerStatus('Imagen lista. Ajusta recorte y envía.');
   } catch (err) {
     console.error('Error al leer imagen base de sticker:', err);
-    showChatError('No se pudo cargar la imagen para sticker.');
+    showChatError(`No se pudo cargar la imagen para sticker: ${err.message || 'error desconocido'}.`);
+    setStickerStatus('');
   }
 }
 
@@ -1031,10 +1105,14 @@ async function exportStickerAndSend() {
 
   const btn = document.getElementById('sticker-export');
   btn.disabled = true;
-  btn.textContent = 'Exportando…';
+  btn.textContent = 'Procesando…';
+  setStickerStatus('Creando sticker…');
+  setChatStatus('Creando sticker…');
 
   try {
     const sticker = await buildStickerAsset(state.stickerStudio.sourceImg);
+    setStickerStatus(`Sticker listo: ${sticker.reason}. Subiendo…`);
+    setChatStatus('Subiendo sticker…');
     const messageId = DB.createMessageId(state.rid);
     const upload = await DB.uploadRoomSticker(state.rid, messageId, sticker.blob, sticker.mime);
 
@@ -1055,8 +1133,15 @@ async function exportStickerAndSend() {
     if (state.activeReplyTo) msg.replyTo = { ...state.activeReplyTo };
 
     validateOutgoingMessage(msg);
+    setChatStatus('Creando mensaje de sticker…');
     await DB.sendMessageWithId(state.rid, messageId, msg);
     clearActiveReply();
+    setStickerStatus('Sticker enviado.');
+    setChatStatus('Sticker enviado.');
+    setTimeout(() => {
+      setStickerStatus('');
+      setChatStatus('');
+    }, 1400);
 
     if (state.userId) {
       const shouldSave = window.confirm('¿Guardar este sticker?');
@@ -1073,7 +1158,10 @@ async function exportStickerAndSend() {
     closeStickerStudio();
   } catch (err) {
     console.error('Error al exportar/enviar sticker:', err);
-    showChatError('No se pudo enviar el sticker.');
+    const reason = err && err.message ? err.message : 'error desconocido';
+    showChatError(`No se pudo enviar el sticker: ${reason}.`);
+    setStickerStatus(`Error: ${reason}`);
+    setChatStatus('');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Enviar sticker';
@@ -1104,12 +1192,15 @@ async function buildStickerAsset(sourceImg) {
       width: canvas.width,
       height: canvas.height,
       sourceW: sourceImg.naturalWidth,
-      sourceH: sourceImg.naturalHeight
+      sourceH: sourceImg.naturalHeight,
+      reason: `WEBP optimizado (q=${quality.toFixed(2)})`
     };
   }
 
   const png = await canvasToBlob(canvas, 'image/png');
-  if (png.size > STICKER_LIMITS.maxUploadBytes * 1.8) throw new Error('Sticker demasiado pesado');
+  if (png.size > STICKER_LIMITS.maxUploadBytes * 1.8) {
+    throw new Error(`falló WEBP (${Math.round(webp.size / 1024)}KB) y PNG quedó demasiado pesado (${Math.round(png.size / 1024)}KB)`);
+  }
 
   return {
     blob: png,
@@ -1117,7 +1208,8 @@ async function buildStickerAsset(sourceImg) {
     width: canvas.width,
     height: canvas.height,
     sourceW: sourceImg.naturalWidth,
-    sourceH: sourceImg.naturalHeight
+    sourceH: sourceImg.naturalHeight,
+    reason: `WEBP excedió límite (${Math.round(webp.size / 1024)}KB), enviado como PNG`
   };
 }
 
@@ -1125,23 +1217,43 @@ async function compressImage(file, limits) {
   const dataUrl = await readFileAsDataURL(file);
   const img = await loadImage(dataUrl);
 
-  const ratio = Math.min(1, limits.maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
-  const targetW = Math.max(1, Math.round(img.naturalWidth * ratio));
-  const targetH = Math.max(1, Math.round(img.naturalHeight * ratio));
-
+  const baseRatio = Math.min(1, limits.maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
   const canvas = document.createElement('canvas');
-  canvas.width = targetW;
-  canvas.height = targetH;
-  canvas.getContext('2d').drawImage(img, 0, 0, targetW, targetH);
+  const ctx = canvas.getContext('2d');
 
+  let dimFactor = 1;
   let quality = limits.preferredQuality;
-  let blob = await canvasToBlob(canvas, 'image/jpeg', quality);
-  while (blob.size > limits.maxUploadBytes && quality > 0.45) {
-    quality -= 0.08;
-    blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+  let blob = null;
+  let strategy = 'normal';
+  let attempts = 0;
+
+  while (attempts < 8) {
+    const targetW = Math.max(1, Math.round(img.naturalWidth * baseRatio * dimFactor));
+    const targetH = Math.max(1, Math.round(img.naturalHeight * baseRatio * dimFactor));
+    canvas.width = targetW;
+    canvas.height = targetH;
+    ctx.clearRect(0, 0, targetW, targetH);
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+
+    let localQuality = quality;
+    blob = await canvasToBlob(canvas, 'image/jpeg', localQuality);
+    while (blob.size > limits.maxUploadBytes && localQuality > 0.4) {
+      localQuality -= 0.07;
+      blob = await canvasToBlob(canvas, 'image/jpeg', localQuality);
+    }
+
+    if (blob.size <= limits.maxUploadBytes || (dimFactor <= 0.62 && localQuality <= 0.45)) {
+      quality = localQuality;
+      return { blob, width: targetW, height: targetH, mime: 'image/jpeg', strategy };
+    }
+
+    strategy = 'fallback';
+    dimFactor *= 0.86;
+    quality = Math.max(0.45, quality - 0.05);
+    attempts += 1;
   }
 
-  return { blob, width: targetW, height: targetH, mime: 'image/jpeg' };
+  throw new Error(`compresión insuficiente (${Math.round((blob?.size || 0) / 1024)}KB)`);
 }
 
 function readFileAsDataURL(file) {
