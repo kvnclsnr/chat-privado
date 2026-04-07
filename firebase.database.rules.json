@@ -22,7 +22,7 @@
         ".read": "root.child('rooms').child($roomId).exists()",
         "$sessionId": {
           ".write": "root.child('rooms').child($roomId).exists()",
-          ".validate": "newData.hasChildren(['name','joinedAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 24 && newData.child('joinedAt').isNumber()"
+          ".validate": "newData.hasChildren(['name','joinedAt','userKey']) && (newData.getChildrenCount() === 3) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 24 && newData.child('joinedAt').isNumber() && newData.child('userKey').isString() && newData.child('userKey').val().matches('^u_[a-z0-9]+$')"
         }
       }
     },
@@ -32,6 +32,15 @@
         "$targetSessionId": {
           ".write": "root.child('rooms').child($roomId).exists() && !data.exists() && newData.exists()",
           ".validate": "newData.hasChildren(['kickedAt','kickedBy','kickedBySession','targetName']) && newData.getChildrenCount() === 4 && newData.child('kickedAt').isNumber() && newData.child('kickedBy').isString() && newData.child('kickedBy').val().length > 0 && newData.child('kickedBy').val().length <= 24 && newData.child('targetName').isString() && newData.child('targetName').val().length > 0 && newData.child('targetName').val().length <= 24 && newData.child('kickedBySession').isString() && root.child('members').child($roomId).child(newData.child('kickedBySession').val()).child('name').val() === root.child('rooms').child($roomId).child('createdBy').val() && root.child('members').child($roomId).child(newData.child('kickedBySession').val()).exists() && root.child('members').child($roomId).child($targetSessionId).child('name').val() === newData.child('targetName').val()"
+        }
+      }
+    },
+    "bans": {
+      "$roomId": {
+        ".read": "root.child('rooms').child($roomId).exists()",
+        "$userKey": {
+          ".write": "root.child('rooms').child($roomId).exists() && (( !data.exists() && newData.exists() && newData.child('bannedBySession').isString() && root.child('members').child($roomId).child(newData.child('bannedBySession').val()).exists() && root.child('members').child($roomId).child(newData.child('bannedBySession').val()).child('name').val() === root.child('rooms').child($roomId).child('createdBy').val()) || (data.exists() && !newData.exists() && data.child('bannedBySession').isString() && root.child('members').child($roomId).child(data.child('bannedBySession').val()).exists() && root.child('members').child($roomId).child(data.child('bannedBySession').val()).child('name').val() === root.child('rooms').child($roomId).child('createdBy').val()))",
+          ".validate": "newData.hasChildren(['bannedAt','bannedBy','bannedBySession','targetName']) && (newData.getChildrenCount() === 4 || newData.getChildrenCount() === 5) && newData.child('bannedAt').isNumber() && newData.child('bannedBy').isString() && newData.child('bannedBy').val().length > 0 && newData.child('bannedBy').val().length <= 24 && newData.child('bannedBySession').isString() && newData.child('targetName').isString() && newData.child('targetName').val().length > 0 && newData.child('targetName').val().length <= 24 && (!newData.child('reason').exists() || (newData.child('reason').isString() && newData.child('reason').val().length <= 140)) && root.child('members').child($roomId).child(newData.child('bannedBySession').val()).child('name').val() === root.child('rooms').child($roomId).child('createdBy').val()"
         }
       }
     },

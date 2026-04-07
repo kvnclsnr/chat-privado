@@ -263,7 +263,7 @@ async function handleCreate() {
   state.me = myName;
   state.sid = generateSessionId();
   state.userId = generateUserId(myName);
-  state.memberRef = await DB.joinRoom(roomId, state.sid, myName);
+  state.memberRef = await DB.joinRoom(roomId, state.sid, myName, state.userId);
 
   document.getElementById('cr-id').textContent = roomId;
   document.getElementById('cr-info').innerHTML = `
@@ -307,13 +307,21 @@ async function handleJoin() {
 
   if (await DB.isNameTaken(roomId, name)) return showError('j-er', 'Ese nombre ya está en uso en esta sala');
 
+  const userKey = generateUserId(name);
+  const banState = await DB.getBan(roomId, userKey);
+  if (banState) {
+    const reason = String(banState.reason || '').trim();
+    const reasonSuffix = reason ? ` Motivo: ${reason}` : '';
+    return showError('j-er', `No puedes entrar: estás baneado de esta sala.${reasonSuffix}`);
+  }
+
   state.rid = roomId;
   state.room = room;
   state.me = name;
   state.sid = generateSessionId();
-  state.userId = generateUserId(name);
+  state.userId = userKey;
 
-  state.memberRef = await DB.joinRoom(roomId, state.sid, name);
+  state.memberRef = await DB.joinRoom(roomId, state.sid, name, state.userId);
   await DB.postSystemMessage(roomId, `${name} se unió`);
   enterChat();
 }
@@ -395,7 +403,7 @@ async function handleKickMember(member) {
   if (member.sessionId === state.sid) return;
 
   const targetName = String(member.name || 'usuario').trim() || 'usuario';
-  const confirmed = window.confirm(`¿Expulsar a ${targetName} de la sala?`);
+  const confirmed = window.confirm(`¿Sacar a ${targetName} de la sala?`);
   if (!confirmed) return;
 
   try {
@@ -409,6 +417,45 @@ async function handleKickMember(member) {
   } catch (err) {
     console.error('Error al expulsar usuario:', err);
     showChatError('No se pudo expulsar al usuario. Intenta de nuevo.');
+  }
+}
+
+async function handleBanMember(member) {
+  if (!member || !member.sessionId || !member.userKey) return;
+  if (!isRoomCreator()) return;
+  if (member.sessionId === state.sid) return;
+
+  const targetName = String(member.name || 'usuario').trim() || 'usuario';
+  const reasonInput = window.prompt(`Motivo del baneo para ${targetName} (opcional):`, '');
+  if (reasonInput === null) return;
+  const reason = String(reasonInput).trim().slice(0, 140);
+  const confirmed = window.confirm(`¿Banear a ${targetName} de la sala? No podrá volver a entrar.`);
+  if (!confirmed) return;
+
+  try {
+    await DB.banMember(
+      state.rid,
+      member.sessionId,
+      member.userKey,
+      {
+        bannedAt: Date.now(),
+        bannedBy: state.me,
+        bannedBySession: state.sid,
+        targetName,
+        ...(reason ? { reason } : {})
+      },
+      {
+        kickedAt: Date.now(),
+        kickedBy: state.me,
+        kickedBySession: state.sid,
+        targetName
+      }
+    );
+    const reasonSuffix = reason ? ` (motivo: ${reason})` : '';
+    await DB.postSystemMessage(state.rid, `${targetName} fue baneado por ${state.me}${reasonSuffix}`);
+  } catch (err) {
+    console.error('Error al banear usuario:', err);
+    showChatError('No se pudo banear al usuario. Intenta de nuevo.');
   }
 }
 
@@ -478,15 +525,34 @@ function renderMembersPanel() {
       }
 
       if (canModerate && member.sessionId !== state.sid) {
+        const actions = document.createElement('div');
+        actions.className = 'member-actions';
+
         const kickBtn = document.createElement('button');
         kickBtn.className = 'member-kick-btn';
         kickBtn.type = 'button';
-        kickBtn.textContent = 'Expulsar';
+        kickBtn.textContent = 'Sacar';
         kickBtn.addEventListener('click', evt => {
           evt.stopPropagation();
           handleKickMember(member);
         });
-        row.appendChild(kickBtn);
+        actions.appendChild(kickBtn);
+
+        const banBtn = document.createElement('button');
+        banBtn.className = 'member-ban-btn';
+        banBtn.type = 'button';
+        banBtn.textContent = 'Banear';
+        if (!member.userKey) {
+          banBtn.disabled = true;
+          banBtn.title = 'No disponible para este miembro';
+        }
+        banBtn.addEventListener('click', evt => {
+          evt.stopPropagation();
+          handleBanMember(member);
+        });
+        actions.appendChild(banBtn);
+
+        row.appendChild(actions);
       }
 
       list.appendChild(row);
