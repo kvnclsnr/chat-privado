@@ -12,6 +12,7 @@ Construido con HTML, CSS, JavaScript vanilla, **Firebase Realtime Database** y *
 - Código de sala único de 6 caracteres para compartir
 - Mensajes en tiempo real sin recarga (Firebase listeners)
 - Envío de imágenes con compresión/redimensión en cliente antes de subir
+- Sticker Studio (recorte + exportación WebP/PNG transparente y envío como mensaje `sticker`)
 - Presencia automática: los miembros se eliminan al cerrar la pestaña
 - Diseño iOS 26 modo oscuro, responsive para móvil y escritorio
 
@@ -110,6 +111,18 @@ service firebase.storage {
 ```
 
 > Firebase Storage no puede consultar Realtime Database directamente desde reglas. Por eso aquí se valida el formato de ruta (`rooms/{roomId}/images/{messageId}`) y longitud de IDs.
+
+
+Archivos de reglas listos para usar en este repo:
+
+- `firebase.database.rules.json`
+- `firebase.storage.rules`
+
+Puedes cargarlos con Firebase CLI:
+
+```bash
+firebase deploy --only database,storage
+```
 
 ### 6. Límites recomendados para imágenes
 
