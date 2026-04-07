@@ -31,7 +31,6 @@ html, body {
   min-height: 100dvh;
   width: 100%;
   background: radial-gradient(130% 90% at 50% 0%, #15203f 0%, var(--bg-main) 55%);
-  display: flex;
   align-items: center;
   justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
@@ -43,7 +42,7 @@ html, body {
 #ca {
   width: 100%;
   max-width: 480px;
-  margin: auto;
+  margin-inline: auto;
   height: 100dvh;
   min-height: 100dvh;
   max-height: 720px;
@@ -580,6 +579,7 @@ h2 {
 .msg-body {
   display: flex;
   flex-direction: column;
+  width: fit-content;
   min-width: 0;
   max-width: 100%;
   position: relative;
@@ -588,10 +588,12 @@ h2 {
 
 .msg-body-me {
   align-items: flex-end;
+  align-self: flex-end;
 }
 
 .msg-body-other {
   align-items: flex-start;
+  align-self: flex-start;
 }
 
 .msg-sender {
@@ -635,11 +637,11 @@ h2 {
 }
 
 .msg-reply-icon-me {
-  left: -18px;
+  left: -14px;
 }
 
 .msg-reply-icon-other {
-  right: -18px;
+  right: -14px;
 }
 
 .msg-reply-icon:hover {
@@ -1038,8 +1040,8 @@ h2 {
     display: flex;
   }
 
-  .msg-reply-icon-me { left: -18px; }
-  .msg-reply-icon-other { right: -18px; }
+  .msg-reply-icon-me { left: -14px; }
+  .msg-reply-icon-other { right: -14px; }
 }
 
 @media (orientation: landscape) and (max-height: 540px) {
