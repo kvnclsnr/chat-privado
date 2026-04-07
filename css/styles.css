@@ -1021,15 +1021,23 @@ h2 {
 }
 
 @media (min-width: 768px) {
+  html,
+  body {
+    padding: clamp(16px, 3.2vh, 30px) clamp(18px, 3vw, 34px);
+    background:
+      radial-gradient(62% 48% at 50% 0%, rgba(66, 114, 212, 0.34) 0%, rgba(10, 14, 28, 0) 70%),
+      radial-gradient(140% 110% at 50% -10%, #1a2648 0%, #070912 58%, #04050b 100%);
+  }
+
   #ca {
-    width: min(92vw, 860px);
-    max-width: 860px;
-    height: 92dvh;
-    min-height: 88dvh;
-    max-height: 92dvh;
-    border-radius: 28px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+    width: min(96vw, 1180px);
+    max-width: 1180px;
+    height: min(94dvh, 860px);
+    min-height: 680px;
+    max-height: 94dvh;
+    border-radius: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 48px 100px rgba(2, 8, 28, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 
   #msgs {
