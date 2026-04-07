@@ -484,27 +484,6 @@ h2 {
 }
 
 .member-kick-btn {
-  border: 0.5px solid rgba(255, 69, 58, 0.45);
-  background: rgba(255, 69, 58, 0.14);
-  color: #ff9f97;
-  border-radius: 9px;
-  padding: 5px 9px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.member-kick-btn:hover {
-  background: rgba(255, 69, 58, 0.22);
-}
-
-.member-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.member-ban-btn {
   border: 0.5px solid rgba(255, 159, 10, 0.45);
   background: rgba(255, 159, 10, 0.14);
   color: #ffd08a;
@@ -515,8 +494,29 @@ h2 {
   cursor: pointer;
 }
 
-.member-ban-btn:hover {
+.member-kick-btn:hover {
   background: rgba(255, 159, 10, 0.24);
+}
+
+.member-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.member-ban-btn {
+  border: 0.5px solid rgba(255, 69, 58, 0.45);
+  background: rgba(255, 69, 58, 0.14);
+  color: #ff9f97;
+  border-radius: 9px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.member-ban-btn:hover {
+  background: rgba(255, 69, 58, 0.22);
 }
 
 .member-ban-btn:disabled {
