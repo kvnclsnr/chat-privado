@@ -160,75 +160,90 @@ function setStickerPanelStatus(message, timeoutMs = null) {
   }
 }
 
-// ── Eventos UI ──────────────────────────────────────────────
-document.getElementById('btn-create').addEventListener('click', () => goTo('create'));
-document.getElementById('btn-join').addEventListener('click', () => goTo('join'));
-document.getElementById('back-create').addEventListener('click', () => goTo('home'));
-document.getElementById('btn-do-create').addEventListener('click', handleCreate);
-document.getElementById('c-mx').addEventListener('input', function () {
-  document.getElementById('c-mv').textContent = this.value;
-});
-
-document.getElementById('back-join').addEventListener('click', () => goTo('home'));
-document.getElementById('btn-do-join').addEventListener('click', handleJoin);
-document.getElementById('j-id').addEventListener('input', function () {
-  const cursor = this.selectionStart;
-  this.value = this.value.toUpperCase();
-  this.setSelectionRange(cursor, cursor);
-});
-
-['c-me', 'c-nm', 'c-cd'].forEach(id => {
-  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') handleCreate(); });
-});
-['j-nm', 'j-id', 'j-cd'].forEach(id => {
-  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') handleJoin(); });
-});
-
-document.getElementById('btn-enter').addEventListener('click', enterChat);
-document.getElementById('btn-leave').addEventListener('click', leaveChat);
-document.getElementById('sb').addEventListener('click', sendMessage);
-document.getElementById('ab').addEventListener('click', () => document.getElementById('fi').click());
-document.getElementById('fi').addEventListener('change', onImageSelected);
-document.getElementById('btn-sticker').addEventListener('click', openStickerPanel);
-document.getElementById('sticker-panel-close').addEventListener('click', closeStickerPanel);
-document.getElementById('sticker-panel-cancel').addEventListener('click', closeStickerPanel);
-document.getElementById('sticker-panel-create').addEventListener('click', () => {
-  closeStickerPanel();
-  openStickerStudio();
-});
-document.getElementById('sticker-close').addEventListener('click', closeStickerStudio);
-document.getElementById('sticker-cancel').addEventListener('click', closeStickerStudio);
-document.getElementById('sticker-file').addEventListener('change', onStickerFileSelected);
-document.getElementById('sticker-file-btn').addEventListener('click', () => {
-  document.getElementById('sticker-file').click();
-});
-document.getElementById('sticker-export').addEventListener('click', exportStickerAndSend);
-document.getElementById('sticker-x').addEventListener('input', onStickerCropChange);
-document.getElementById('sticker-y').addEventListener('input', onStickerCropChange);
-document.getElementById('sticker-size').addEventListener('input', onStickerCropChange);
-document.getElementById('mi').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
+function bindIfExists(elementId, eventName, handler) {
+  const el = document.getElementById(elementId);
+  if (!el) {
+    console.warn(`[ui] Listener omitido: #${elementId} no existe para "${eventName}"`);
+    return null;
   }
-});
-document.getElementById('mi').addEventListener('input', function () {
-  autoResizeTextarea(this);
-  cancelReplyAutoCollapse();
-});
-document.getElementById('mi').addEventListener('focus', cancelReplyAutoCollapse);
-document.getElementById('mi').addEventListener('blur', scheduleReplyAutoCollapse);
+  el.addEventListener(eventName, handler);
+  return el;
+}
 
-document.getElementById('reply-cancel').addEventListener('click', clearActiveReply);
-document.getElementById('members-pill').addEventListener('click', toggleMembersPanel);
-document.getElementById('members-close').addEventListener('click', closeMembersPanel);
-document.getElementById('s-chat').addEventListener('click', evt => {
-  if (!state.membersPanelOpen) return;
-  const panel = document.getElementById('members-panel');
-  const pill = document.getElementById('members-pill');
-  if (panel.contains(evt.target) || pill.contains(evt.target)) return;
-  closeMembersPanel();
-});
+function initEventListeners() {
+  bindIfExists('btn-create', 'click', () => goTo('create'));
+  bindIfExists('btn-join', 'click', () => goTo('join'));
+  bindIfExists('back-create', 'click', () => goTo('home'));
+  bindIfExists('btn-do-create', 'click', handleCreate);
+  bindIfExists('c-mx', 'input', function () {
+    const valueEl = document.getElementById('c-mv');
+    if (valueEl) valueEl.textContent = this.value;
+  });
+
+  bindIfExists('back-join', 'click', () => goTo('home'));
+  bindIfExists('btn-do-join', 'click', handleJoin);
+  bindIfExists('j-id', 'input', function () {
+    const cursor = this.selectionStart;
+    this.value = this.value.toUpperCase();
+    this.setSelectionRange(cursor, cursor);
+  });
+
+  ['c-me', 'c-nm', 'c-cd'].forEach(id => {
+    bindIfExists(id, 'keydown', e => { if (e.key === 'Enter') handleCreate(); });
+  });
+  ['j-nm', 'j-id', 'j-cd'].forEach(id => {
+    bindIfExists(id, 'keydown', e => { if (e.key === 'Enter') handleJoin(); });
+  });
+
+  bindIfExists('btn-enter', 'click', enterChat);
+  bindIfExists('btn-leave', 'click', leaveChat);
+  bindIfExists('sb', 'click', sendMessage);
+  bindIfExists('ab', 'click', () => document.getElementById('fi')?.click());
+  bindIfExists('fi', 'change', onImageSelected);
+  bindIfExists('btn-sticker', 'click', openStickerPanel);
+  bindIfExists('sticker-panel-close', 'click', closeStickerPanel);
+  bindIfExists('sticker-panel-cancel', 'click', closeStickerPanel);
+  bindIfExists('sticker-panel-create', 'click', () => {
+    closeStickerPanel();
+    openStickerStudio();
+  });
+  bindIfExists('sticker-close', 'click', closeStickerStudio);
+  bindIfExists('sticker-cancel', 'click', closeStickerStudio);
+  bindIfExists('sticker-file', 'change', onStickerFileSelected);
+  bindIfExists('sticker-file-btn', 'click', () => {
+    document.getElementById('sticker-file')?.click();
+  });
+  bindIfExists('sticker-export', 'click', exportStickerAndSend);
+  bindIfExists('sticker-x', 'input', onStickerCropChange);
+  bindIfExists('sticker-y', 'input', onStickerCropChange);
+  bindIfExists('sticker-size', 'input', onStickerCropChange);
+  bindIfExists('mi', 'keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  bindIfExists('mi', 'input', function () {
+    autoResizeTextarea(this);
+    cancelReplyAutoCollapse();
+  });
+  bindIfExists('mi', 'focus', cancelReplyAutoCollapse);
+  bindIfExists('mi', 'blur', scheduleReplyAutoCollapse);
+
+  bindIfExists('reply-cancel', 'click', clearActiveReply);
+  bindIfExists('members-pill', 'click', toggleMembersPanel);
+  bindIfExists('members-close', 'click', closeMembersPanel);
+  bindIfExists('s-chat', 'click', evt => {
+    if (!state.membersPanelOpen) return;
+    const panel = document.getElementById('members-panel');
+    const pill = document.getElementById('members-pill');
+    if (!panel || !pill) return;
+    if (panel.contains(evt.target) || pill.contains(evt.target)) return;
+    closeMembersPanel();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initEventListeners);
 
 async function handleCreate() {
   const myName = document.getElementById('c-me').value.trim();
@@ -601,6 +616,7 @@ function renderTextMessage(container, msg) {
 
   shell.body.appendChild(bubble);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
+  shell.body.appendChild(shell.replyBtn);
 }
 
 function renderImageMessage(container, msg) {
@@ -623,6 +639,7 @@ function renderImageMessage(container, msg) {
 
   shell.body.appendChild(btn);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
+  shell.body.appendChild(shell.replyBtn);
 }
 
 function renderStickerMessage(container, msg) {
@@ -654,6 +671,7 @@ function renderStickerMessage(container, msg) {
   wrap.appendChild(btn);
   shell.body.appendChild(wrap);
   shell.body.appendChild(makeTimeNode(msg.ts, isMine));
+  shell.body.appendChild(shell.replyBtn);
 }
 
 function renderReplyQuote(body, replyTo) {
@@ -683,29 +701,26 @@ function buildReplyShell(container, msg, isMine, extraStickerClass = false) {
 
   const content = document.createElement('div');
   content.className = 'msg-content';
-  content.dataset.swipeable = '1';
+  const swipeTrack = document.createElement('div');
+  swipeTrack.className = 'msg-swipe-track';
+  swipeTrack.dataset.swipeable = '1';
 
   if (!isMine) {
     const senderEl = document.createElement('div');
     senderEl.className = 'msg-sender';
     senderEl.textContent = msg.sender || 'Usuario';
-    content.appendChild(senderEl);
+    swipeTrack.appendChild(senderEl);
   }
 
   const body = document.createElement('div');
   body.className = `msg-body ${isMine ? 'msg-body-me' : 'msg-body-other'}`;
-  content.appendChild(body);
+  swipeTrack.appendChild(body);
+  content.appendChild(swipeTrack);
 
   const replyBtn = createReplyButton(msg);
-  if (isMine) {
-    container.appendChild(replyBtn);
-    container.appendChild(content);
-  } else {
-    container.appendChild(content);
-    container.appendChild(replyBtn);
-  }
+  container.appendChild(content);
 
-  attachSwipeReply(content, msg);
+  attachSwipeReply(swipeTrack, msg);
   return { content, body, replyBtn };
 }
 
