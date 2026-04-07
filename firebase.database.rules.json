@@ -26,6 +26,15 @@
         }
       }
     },
+    "kicked": {
+      "$roomId": {
+        ".read": "root.child('rooms').child($roomId).exists()",
+        "$targetSessionId": {
+          ".write": "root.child('rooms').child($roomId).exists() && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['kickedAt','kickedBy','kickedBySession','targetName']) && newData.getChildrenCount() === 4 && newData.child('kickedAt').isNumber() && newData.child('kickedBy').isString() && newData.child('kickedBy').val().length > 0 && newData.child('kickedBy').val().length <= 24 && newData.child('targetName').isString() && newData.child('targetName').val().length > 0 && newData.child('targetName').val().length <= 24 && newData.child('kickedBySession').isString() && root.child('members').child($roomId).child(newData.child('kickedBySession').val()).child('name').val() === root.child('rooms').child($roomId).child('createdBy').val() && root.child('members').child($roomId).child(newData.child('kickedBySession').val()).exists() && root.child('members').child($roomId).child($targetSessionId).child('name').val() === newData.child('targetName').val()"
+        }
+      }
+    },
     "users": {
       "$userId": {
         "stickers": {

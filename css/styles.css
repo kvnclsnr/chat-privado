@@ -450,6 +450,21 @@ h2 {
   padding: 2px 8px;
 }
 
+.member-kick-btn {
+  border: 0.5px solid rgba(255, 69, 58, 0.45);
+  background: rgba(255, 69, 58, 0.14);
+  color: #ff9f97;
+  border-radius: 9px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.member-kick-btn:hover {
+  background: rgba(255, 69, 58, 0.22);
+}
+
 /* ── Messages list ──────────────────────────────────────────── */
 #msgs {
   flex: 1;

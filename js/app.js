@@ -11,6 +11,7 @@ const state = {
   memberRef: null,
   unsubMsgs: null,
   unsubMembers: null,
+  unsubKick: null,
   members: [],
   membersPanelOpen: false,
   renderedMsgIds: new Set(),
@@ -278,16 +279,23 @@ function enterChat() {
     document.getElementById('ch-cnt').textContent = members.length;
     renderMembersPanel();
   });
+  state.unsubKick = DB.onKickState(state.rid, state.sid, kickedState => {
+    if (!kickedState) return;
+    const kickedBy = String(kickedState.kickedBy || 'moderador');
+    forceLeaveFromKick(`Has sido expulsado de la sala por ${kickedBy}.`);
+  });
 }
 
-async function leaveChat() {
+async function leaveChat(options = {}) {
+  const skipSystemMessage = options.skipSystemMessage === true;
   if (state.unsubMsgs) { state.unsubMsgs(); state.unsubMsgs = null; }
   if (state.unsubMembers) { state.unsubMembers(); state.unsubMembers = null; }
+  if (state.unsubKick) { state.unsubKick(); state.unsubKick = null; }
 
   if (state.rid && state.sid) {
     try {
       if (state.memberRef) await state.memberRef.onDisconnect().cancel();
-      await DB.postSystemMessage(state.rid, `${state.me} salió`);
+      if (!skipSystemMessage) await DB.postSystemMessage(state.rid, `${state.me} salió`);
       await DB.leaveRoom(state.rid, state.sid);
     } catch (err) {
       console.error('Error al salir:', err);
@@ -307,6 +315,38 @@ async function leaveChat() {
   document.getElementById('msgs').innerHTML = '';
   closeMembersPanel();
   goTo('home');
+}
+
+function isRoomCreator() {
+  return String(state.me || '').trim() !== '' && String(state.me || '').trim() === String(state.room?.createdBy || '').trim();
+}
+
+async function handleKickMember(member) {
+  if (!member || !member.sessionId) return;
+  if (!isRoomCreator()) return;
+  if (member.sessionId === state.sid) return;
+
+  const targetName = String(member.name || 'usuario').trim() || 'usuario';
+  const confirmed = window.confirm(`¿Expulsar a ${targetName} de la sala?`);
+  if (!confirmed) return;
+
+  try {
+    await DB.kickMember(state.rid, member.sessionId, {
+      kickedAt: Date.now(),
+      kickedBy: state.me,
+      kickedBySession: state.sid,
+      targetName
+    });
+    await DB.postSystemMessage(state.rid, `${targetName} fue expulsado por ${state.me}`);
+  } catch (err) {
+    console.error('Error al expulsar usuario:', err);
+    showChatError('No se pudo expulsar al usuario. Intenta de nuevo.');
+  }
+}
+
+function forceLeaveFromKick(message) {
+  window.alert(message);
+  leaveChat({ skipSystemMessage: true });
 }
 
 function toggleMembersPanel() {
@@ -335,6 +375,7 @@ function closeMembersPanel() {
 function renderMembersPanel() {
   const list = document.getElementById('members-list');
   const creator = String(state.room?.createdBy || '').trim();
+  const canModerate = isRoomCreator();
   list.innerHTML = '';
 
   state.members
@@ -366,6 +407,18 @@ function renderMembersPanel() {
         badge.className = 'member-creator-tag';
         badge.textContent = 'Creador';
         row.appendChild(badge);
+      }
+
+      if (canModerate && member.sessionId !== state.sid) {
+        const kickBtn = document.createElement('button');
+        kickBtn.className = 'member-kick-btn';
+        kickBtn.type = 'button';
+        kickBtn.textContent = 'Expulsar';
+        kickBtn.addEventListener('click', evt => {
+          evt.stopPropagation();
+          handleKickMember(member);
+        });
+        row.appendChild(kickBtn);
       }
 
       list.appendChild(row);
