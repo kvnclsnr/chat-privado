@@ -43,8 +43,8 @@
           <input class="inp" id="c-nm" type="text" placeholder="Ej. Amigos del cole" maxlength="30" autocomplete="off" />
         </div>
         <div class="form-row">
-          <label class="lbl">Código de acceso</label>
-          <input class="inp" id="c-cd" type="password" placeholder="Elige una clave secreta" autocomplete="new-password" />
+          <label class="lbl">Código de acceso (opcional)</label>
+          <input class="inp" id="c-cd" type="password" placeholder="Déjalo vacío para sala abierta" autocomplete="new-password" />
         </div>
         <div class="form-row">
           <label class="lbl">Máximo de usuarios — <span id="c-mv">5</span></label>
@@ -76,7 +76,7 @@
       <div class="screen-head">
         <button class="back" id="back-join">‹ Volver</button>
         <h2>Unirse</h2>
-        <p class="sub">Ingresa el ID y la clave de la sala</p>
+        <p class="sub">Ingresa el ID de la sala (y clave si tiene)</p>
       </div>
       <div class="sc">
         <div class="form-row">
@@ -88,8 +88,8 @@
           <input class="inp inp-mono" id="j-id" type="text" placeholder="AB1C2D" maxlength="6" autocomplete="off" />
         </div>
         <div class="form-row">
-          <label class="lbl">Código de acceso</label>
-          <input class="inp" id="j-cd" type="password" placeholder="Clave secreta" autocomplete="off" />
+          <label class="lbl">Código de acceso (si aplica)</label>
+          <input class="inp" id="j-cd" type="password" placeholder="Solo para salas con contraseña" autocomplete="off" />
         </div>
         <div class="err" id="j-er"></div>
         <button class="btn-p" id="btn-do-join">Entrar →</button>

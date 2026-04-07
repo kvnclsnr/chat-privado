@@ -170,16 +170,17 @@ async function handleCreate() {
 
   if (!myName) return showError('c-er', 'Ingresa tu nombre');
   if (!roomName) return showError('c-er', 'Ingresa el nombre de la sala');
-  if (!code) return showError('c-er', 'Define un código de acceso');
+  const requiresPass = code.length > 0;
 
   const roomId = generateRoomId();
   const roomData = {
     name: roomName,
-    codeHash: await hashAccessCode(code),
+    requiresPass,
     maxUsers,
     createdBy: myName,
     createdAt: Date.now()
   };
+  if (requiresPass) roomData.codeHash = await hashAccessCode(code);
 
   try {
     await DB.createRoom(roomId, roomData);
@@ -199,7 +200,7 @@ async function handleCreate() {
   document.getElementById('cr-id').textContent = roomId;
   document.getElementById('cr-info').innerHTML = `
     <div class="info-card-row"><span>Sala</span><span>${escapeHtml(roomName)}</span></div>
-    <div class="info-card-row"><span>Clave de acceso</span><span>${escapeHtml(code)}</span></div>
+    <div class="info-card-row"><span>Clave de acceso</span><span>${requiresPass ? escapeHtml(code) : 'Sin clave'}</span></div>
     <div class="info-card-row"><span>Capacidad</span><span>${maxUsers} personas</span></div>`;
 
   goTo('created');
@@ -212,7 +213,6 @@ async function handleJoin() {
 
   if (!name) return showError('j-er', 'Ingresa tu nombre');
   if (roomId.length !== 6) return showError('j-er', 'El código de sala tiene 6 caracteres');
-  if (!code) return showError('j-er', 'Ingresa el código de acceso');
 
   let room;
   try {
@@ -223,9 +223,16 @@ async function handleJoin() {
   }
 
   if (!room) return showError('j-er', 'Sala no encontrada — verifica el ID');
-  const incomingCodeHash = await hashAccessCode(code);
-  if (room.codeHash && room.codeHash !== incomingCodeHash) return showError('j-er', 'Código de acceso incorrecto');
-  if (!room.codeHash && room.code !== code) return showError('j-er', 'Código de acceso incorrecto');
+
+  const requiresPass = room.requiresPass === true
+    || (room.requiresPass === undefined && (typeof room.codeHash === 'string' || typeof room.code === 'string'));
+
+  if (requiresPass) {
+    if (!code) return showError('j-er', 'Esta sala requiere contraseña');
+    const incomingCodeHash = await hashAccessCode(code);
+    if (room.codeHash && room.codeHash !== incomingCodeHash) return showError('j-er', 'Código de acceso incorrecto');
+    if (!room.codeHash && room.code && room.code !== code) return showError('j-er', 'Código de acceso incorrecto');
+  }
 
   const count = await DB.getMemberCount(roomId);
   if (count >= room.maxUsers) return showError('j-er', `Sala llena (${count}/${room.maxUsers} usuarios)`);
