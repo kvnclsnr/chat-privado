@@ -42,6 +42,7 @@ html, body {
 #ca {
   width: 100%;
   max-width: 480px;
+  margin: auto;
   margin-inline: auto;
   height: 100dvh;
   min-height: 100dvh;
@@ -624,11 +625,14 @@ h2 {
   color: rgba(255, 255, 255, 0.95);
   align-items: center;
   justify-content: center;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  position: static;
   cursor: pointer;
   flex-shrink: 0;
+  align-self: center;
+  opacity: 0.95;
+  box-shadow: 0 3px 10px rgba(2, 7, 21, 0.55);
+  transition: opacity 0.14s ease, transform 0.14s ease, background-color 0.14s ease;
+  display: none;
   opacity: 0.95;
   z-index: 3;
   box-shadow: 0 3px 10px rgba(2, 7, 21, 0.55);
@@ -647,18 +651,18 @@ h2 {
 .msg-reply-icon:hover {
   opacity: 0.92;
   background: rgba(8, 10, 20, 0.66);
-  transform: translateY(-50%) scale(1.04);
+  transform: scale(1.04);
 }
 
 .msg-reply-icon:focus-visible {
   opacity: 1;
-  transform: translateY(-50%) scale(1.04);
+  transform: scale(1.04);
   outline: 2px solid rgba(0, 122, 255, 0.82);
   outline-offset: 2px;
 }
 
 .msg-reply-icon:active {
-  transform: translateY(-50%) scale(0.94);
+  transform: scale(0.94);
 }
 
 .bubble-image {
