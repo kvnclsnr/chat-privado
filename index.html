@@ -136,7 +136,7 @@
         <div class="inp-compose">
           <input id="fi" type="file" accept="image/*" hidden />
           <button id="ab" class="attach-btn" aria-label="Adjuntar imagen" title="Adjuntar imagen">📎</button>
-          <button id="btn-sticker" class="attach-btn" aria-label="Abrir Sticker Studio" title="Sticker Studio">✨</button>
+          <button id="btn-sticker" class="attach-btn" aria-label="Stickers guardados" title="Stickers guardados">🗂️</button>
           <textarea id="mi" placeholder="Mensaje..." rows="1"></textarea>
           <button id="sb" aria-label="Enviar">
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
@@ -165,6 +165,20 @@
       <div class="sticker-actions">
         <button id="sticker-cancel" class="btn-s" type="button">Cancelar</button>
         <button id="sticker-export" class="btn-p" type="button">Enviar sticker</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sticker-studio" id="sticker-panel" hidden>
+    <div class="sticker-sheet">
+      <div class="sticker-head">
+        <h3>Stickers guardados</h3>
+        <button id="sticker-panel-close" class="sticker-close" type="button" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="saved-stickers-grid" id="saved-stickers-grid"></div>
+      <div class="sticker-actions">
+        <button id="sticker-panel-create" class="btn-s" type="button">Crear sticker</button>
+        <button id="sticker-panel-cancel" class="btn-p" type="button">Cerrar</button>
       </div>
     </div>
   </div>

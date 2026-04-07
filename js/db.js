@@ -158,5 +158,47 @@ const DB = {
     const removeCount = items.length - keepLast;
     const oldest = items.slice(0, removeCount);
     await Promise.all(oldest.map(it => ref.child(it.key).remove()));
+  },
+
+  onUserStickers: function (userId, callback) {
+    const ref = _db.ref(`users/${userId}/stickers`).orderByChild('savedAt').limitToLast(120);
+    ref.on('value', function (snap) {
+      const stickers = [];
+      snap.forEach(function (child) {
+        stickers.push({ key: child.key, ...child.val() });
+      });
+      callback(stickers);
+    });
+    return function () { ref.off('value'); };
+  },
+
+  saveStickerForUser: async function (userId, sticker) {
+    const ref = _db.ref(`users/${userId}/stickers`);
+    const snap = await ref.once('value');
+    let existingKey = null;
+    snap.forEach(function (child) {
+      const value = child.val() || {};
+      const sameHash = sticker.hash && value.hash && sticker.hash === value.hash;
+      const sameUrl = sticker.stickerUrl && value.stickerUrl && sticker.stickerUrl === value.stickerUrl;
+      if (sameHash || sameUrl) {
+        existingKey = child.key;
+      }
+    });
+
+    if (existingKey) {
+      await ref.child(existingKey).update({
+        savedAt: Date.now(),
+        lastSender: sticker.lastSender || sticker.sender || null,
+        saveSource: sticker.saveSource || null
+      });
+      return existingKey;
+    }
+
+    const newRef = ref.push();
+    await newRef.set({
+      ...sticker,
+      savedAt: sticker.savedAt || Date.now()
+    });
+    return newRef.key;
   }
 };
