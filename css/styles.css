@@ -1017,6 +1017,7 @@ h2 {
   #ca {
     width: min(92vw, 860px);
     max-width: 860px;
+    height: 92dvh;
     min-height: 88dvh;
     max-height: 92dvh;
     border-radius: 28px;
