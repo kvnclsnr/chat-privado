@@ -23,7 +23,7 @@ const DB = {
 
   // ── MENSAJES ─────────────────────────────────────────────
   onMessages: function (roomId, callback) {
-    const ref = _db.ref(`messages/${roomId}`).limitToLast(300);
+    const ref = _db.ref(`messages/${roomId}`).orderByChild('ts').limitToLast(300);
 
     ref.on('value', function (snap) {
       const msgs = [];

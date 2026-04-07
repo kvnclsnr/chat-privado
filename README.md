@@ -69,7 +69,7 @@ En Firebase Console → Realtime Database → **Reglas**, usa validaciones por t
       "$roomId": {
         ".read":  true,
         ".write": "!data.exists()",
-        ".validate": "newData.hasChildren(['name','code','maxUsers','createdBy','createdAt'])"
+        ".validate": "newData.hasChildren(['name','codeHash','maxUsers','createdBy','createdAt'])"
       }
     },
     "messages": {
@@ -77,7 +77,7 @@ En Firebase Console → Realtime Database → **Reglas**, usa validaciones por t
         ".read":  true,
         "$msgId": {
           ".write": "root.child('rooms').child($roomId).exists()",
-          ".validate": "newData.hasChildren(['type','ts']) && ((newData.child('type').val() === 'text' && newData.hasChildren(['sender','text'])) || (newData.child('type').val() === 'image' && newData.hasChildren(['sender','imageUrl','imageMeta']) && newData.child('imageMeta').hasChildren(['w','h','size','mime'])) || (newData.child('type').val() === 'sticker' && newData.hasChildren(['sender','stickerId'])) || (newData.child('type').val() === 'sys' && newData.hasChildren(['text'])))"
+          ".validate": "newData.hasChildren(['type','ts']) && ((newData.child('type').val() === 'text' && newData.hasChildren(['sender','text'])) || (newData.child('type').val() === 'image' && newData.hasChildren(['sender','imageUrl','imageMeta'])) || (newData.child('type').val() === 'sticker' && newData.hasChildren(['sender','stickerUrl','stickerMeta'])) || (newData.child('type').val() === 'sys' && newData.hasChildren(['text'])))"
         }
       }
     },
@@ -101,10 +101,13 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /rooms/{roomId}/images/{messageId} {
-      allow read, write: if
+      allow read: if roomId.matches('^[A-Z0-9]{6}$');
+      allow write: if
         roomId.matches('^[A-Z0-9]{6}$') &&
         messageId.size() > 5 &&
-        messageId.size() < 64;
+        messageId.size() < 80 &&
+        request.resource.contentType.matches('^image/.*$') &&
+        request.resource.size < 1500000;
     }
   }
 }
@@ -117,6 +120,8 @@ Archivos de reglas listos para usar en este repo:
 
 - `firebase.database.rules.json`
 - `firebase.storage.rules`
+
+Incluyen índices `.indexOn` en `messages/{roomId}` y `users/{userId}/stickers` para consultas por `ts` con `orderByChild('ts')` + `limitToLast(...)`.
 
 Puedes cargarlos con Firebase CLI:
 
@@ -181,10 +186,14 @@ Cada mensaje en `/messages/{roomId}/{autoId}` usa este contrato:
 
 ```js
 {
-  sender: "Ana",              // omitido en mensajes de sistema
-  text: "Hola 👋",            // omitido en mensajes de sistema
-  type: "sys",                // solo para eventos de sistema
+  type: "text",               // text | image | sticker | sys
+  sender: "Ana",              // requerido excepto type=sys
   ts: 1712599200000,          // timestamp en milisegundos
+  text: "Hola 👋",            // solo para type=text y type=sys
+  imageUrl: "https://...",    // solo para type=image
+  imageMeta: { w: 1200, h: 900, size: 540000, mime: "image/jpeg" },
+  stickerUrl: "https://...",  // solo para type=sticker
+  stickerMeta: { w: 512, h: 512, size: 180000, mime: "image/webp" },
   replyTo: {                  // opcional, solo si es una respuesta
     id: "-Nu1AbCdEf",         // id del mensaje original
     sender: "Luis",           // remitente del mensaje original
@@ -193,7 +202,16 @@ Cada mensaje en `/messages/{roomId}/{autoId}` usa este contrato:
 }
 ```
 
-Compatibilidad hacia atrás: los mensajes sin `replyTo` siguen siendo válidos y se renderizan de forma normal.
+Las salas se guardan en `/rooms/{roomId}` con `codeHash` (SHA-256 hexadecimal) en vez de almacenar el código plano.
+
+### Migración y convivencia con mensajes antiguos
+
+- **Mensajes sin `type`:** el cliente mantiene fallback visual para tratarlos como texto si tienen `sender/text`.
+- **Mensajes sin `replyTo`:** siguen siendo válidos, se renderizan sin banda de respuesta.
+- **Salas antiguas con `code` plano:** el cliente acepta ambas variantes durante la transición:
+  - si existe `codeHash`, valida contra hash;
+  - si aún no existe, compara con `code` legado.
+- Recomendación de migración de salas: crear un script administrativo que recorra `/rooms`, calcule hash para cada `code`, escriba `codeHash` y luego elimine `code`.
 
 ---
 

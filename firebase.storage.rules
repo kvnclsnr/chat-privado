@@ -2,16 +2,24 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /rooms/{roomId}/images/{messageId} {
-      allow read, write: if
+      allow read: if roomId.matches('^[A-Z0-9]{6}$');
+      allow write: if
         roomId.matches('^[A-Z0-9]{6}$') &&
         messageId.size() > 5 &&
-        messageId.size() < 80;
+        messageId.size() < 80 &&
+        request.resource != null &&
+        request.resource.contentType.matches('^image/.*$') &&
+        request.resource.size < 1500000;
     }
 
     match /rooms/{roomId}/stickers/{fileName} {
-      allow read, write: if
+      allow read: if roomId.matches('^[A-Z0-9]{6}$');
+      allow write: if
         roomId.matches('^[A-Z0-9]{6}$') &&
-        fileName.matches('^[A-Za-z0-9_-]{6,80}\.(webp|png)$');
+        fileName.matches('^[A-Za-z0-9_-]{6,80}\\.(webp|png)$') &&
+        request.resource != null &&
+        request.resource.contentType.matches('^image/.*$') &&
+        request.resource.size < 700000;
     }
   }
 }
