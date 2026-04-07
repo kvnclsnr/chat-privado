@@ -619,9 +619,9 @@ h2 {
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  border: 0.5px solid rgba(255, 255, 255, 0.18);
-  background: rgba(8, 10, 20, 0.5);
-  color: rgba(255, 255, 255, 0.82);
+  border: 0.5px solid rgba(255, 255, 255, 0.35);
+  background: rgba(8, 12, 24, 0.82);
+  color: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -630,18 +630,18 @@ h2 {
   transform: translateY(-50%);
   cursor: pointer;
   flex-shrink: 0;
-  opacity: 0.58;
+  opacity: 0.95;
   z-index: 3;
-  box-shadow: 0 2px 8px rgba(2, 7, 21, 0.45);
+  box-shadow: 0 3px 10px rgba(2, 7, 21, 0.55);
   transition: opacity 0.14s ease, transform 0.14s ease, background-color 0.14s ease;
 }
 
 .msg-reply-icon-me {
-  left: -30px;
+  left: -34px;
 }
 
 .msg-reply-icon-other {
-  right: -30px;
+  right: -34px;
 }
 
 .msg-reply-icon:hover {
@@ -771,7 +771,7 @@ h2 {
 .inp-compose {
   display: flex;
   gap: 10px;
-  align-items: flex-end;
+  align-items: center;
 }
 
 .reply-band {
@@ -1053,11 +1053,6 @@ h2 {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .msg-reply-icon {
-    opacity: 0.3;
-    pointer-events: auto;
-  }
-
   .msg-row:hover .msg-reply-icon,
   .msg-row:focus-within .msg-reply-icon,
   .msg-reply-icon:focus-visible {
