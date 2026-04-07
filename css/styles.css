@@ -383,22 +383,45 @@ h2 {
 /* ── Message rows ───────────────────────────────────────────── */
 .msg-row-me {
   display: flex;
+  align-items: flex-end;
   justify-content: flex-end;
+  gap: 8px;
   margin: 3px 14px;
-}
-
-.msg-row-me > div {
-  min-width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: end;
 }
 
 .msg-row-other {
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
+  gap: 8px;
   margin: 3px 14px;
+}
+
+.msg-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  touch-action: pan-y;
+}
+
+.msg-row-me .msg-content {
+  align-items: flex-end;
+}
+
+.msg-row-other .msg-content {
+  align-items: flex-start;
+}
+
+.msg-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.msg-body-me {
+  align-items: flex-end;
+}
+
+.msg-body-other {
+  align-items: flex-start;
 }
 
 .msg-sender {
@@ -413,6 +436,38 @@ h2 {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.28);
   margin-top: 3px;
+}
+
+.msg-time-me {
+  text-align: right;
+  margin-right: 4px;
+}
+
+.msg-reply-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.82);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  align-self: center;
+  flex-shrink: 0;
+  opacity: 0.34;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.msg-reply-icon:focus-visible {
+  opacity: 1;
+  outline: 2px solid rgba(0, 122, 255, 0.82);
+  outline-offset: 2px;
+}
+
+.msg-reply-icon:active {
+  transform: scale(0.93);
 }
 
 .bubble-image {
@@ -735,6 +790,20 @@ h2 {
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .msg-reply-icon {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .msg-row:hover .msg-reply-icon,
+  .msg-row:focus-within .msg-reply-icon,
+  .msg-reply-icon:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .sticker-btn {

@@ -36,6 +36,11 @@ const STICKER_LIMITS = {
   recentLimit: 12
 };
 
+const SWIPE_REPLY = {
+  thresholdPx: 42,
+  maxTranslatePx: 62
+};
+
 const ALLOWED_MESSAGE_KEYS = {
   text: ['type', 'sender', 'text', 'ts', 'replyTo'],
   image: ['type', 'sender', 'imageUrl', 'imageMeta', 'ts', 'replyTo'],
@@ -294,14 +299,8 @@ function renderMessages(msgs) {
     } else if (msg.type === 'sticker') {
       renderStickerMessage(el, msg);
 
-    } else if (msg.sender === state.me) {
-      el.className = 'msg-row-me';
-      el.innerHTML = `<div><div class="bubble-me">${escapeHtml(msg.text || '')}</div><div class="msg-time" style="text-align:right; margin-right:4px;">${formatTime(msg.ts)}</div><button class="msg-reply-btn" type="button">Responder</button></div>`;
-      el.querySelector('.msg-reply-btn').addEventListener('click', () => setActiveReplyFromMessage(msg));
     } else {
-      el.className = 'msg-row-other';
-      el.innerHTML = `<div class="msg-sender">${escapeHtml(msg.sender || 'Usuario')}</div><div class="bubble-other">${escapeHtml(msg.text || '')}</div><div class="msg-time" style="margin-left:3px;">${formatTime(msg.ts)}</div><button class="msg-reply-btn" type="button">Responder</button>`;
-      el.querySelector('.msg-reply-btn').addEventListener('click', () => setActiveReplyFromMessage(msg));
+      renderTextMessage(el, msg);
     }
 
     container.appendChild(el);
@@ -311,21 +310,23 @@ function renderMessages(msgs) {
   if (addedCount > 0 && wasAtBottom) container.scrollTop = container.scrollHeight;
 }
 
+function renderTextMessage(container, msg) {
+  const isMine = msg.sender === state.me;
+  const shell = buildReplyShell(container, msg, isMine);
+  const bubble = document.createElement('div');
+  bubble.className = isMine ? 'bubble-me' : 'bubble-other';
+  bubble.innerHTML = escapeHtml(msg.text || '');
+
+  shell.body.appendChild(bubble);
+  shell.body.appendChild(makeTimeNode(msg.ts, isMine));
+}
+
 function renderImageMessage(container, msg) {
   const isMine = msg.sender === state.me;
   const imageUrl = String(msg.imageUrl || '');
   if (!/^https?:\/\//i.test(imageUrl)) return;
 
-  container.className = isMine ? 'msg-row-me' : 'msg-row-other';
-
-  if (!isMine) {
-    const senderEl = document.createElement('div');
-    senderEl.className = 'msg-sender';
-    senderEl.textContent = msg.sender || 'Usuario';
-    container.appendChild(senderEl);
-  }
-
-  const wrap = document.createElement('div');
+  const shell = buildReplyShell(container, msg, isMine);
   const btn = document.createElement('button');
   btn.className = `${isMine ? 'bubble-me' : 'bubble-other'} bubble-image img-btn`;
   btn.setAttribute('data-img', encodeURIComponent(imageUrl));
@@ -337,14 +338,8 @@ function renderImageMessage(container, msg) {
   img.loading = 'lazy';
   btn.appendChild(img);
 
-  const time = document.createElement('div');
-  time.className = 'msg-time';
-  time.style.cssText = isMine ? 'text-align:right; margin-right:4px;' : 'margin-left:3px;';
-  time.textContent = formatTime(msg.ts);
-
-  wrap.appendChild(btn);
-  wrap.appendChild(time);
-  container.appendChild(wrap);
+  shell.body.appendChild(btn);
+  shell.body.appendChild(makeTimeNode(msg.ts, isMine));
 }
 
 function renderStickerMessage(container, msg) {
@@ -352,15 +347,7 @@ function renderStickerMessage(container, msg) {
   const stickerUrl = String(msg.stickerUrl || '');
   if (!/^https?:\/\//i.test(stickerUrl)) return;
 
-  container.className = isMine ? 'msg-row-me msg-row-sticker' : 'msg-row-other msg-row-sticker';
-
-  if (!isMine) {
-    const senderEl = document.createElement('div');
-    senderEl.className = 'msg-sender';
-    senderEl.textContent = msg.sender || 'Usuario';
-    container.appendChild(senderEl);
-  }
-
+  const shell = buildReplyShell(container, msg, isMine, true);
   const wrap = document.createElement('div');
   wrap.className = 'sticker-wrap';
 
@@ -375,14 +362,121 @@ function renderStickerMessage(container, msg) {
   img.loading = 'lazy';
   btn.appendChild(img);
 
+  wrap.appendChild(btn);
+  shell.body.appendChild(wrap);
+  shell.body.appendChild(makeTimeNode(msg.ts, isMine));
+}
+
+function buildReplyShell(container, msg, isMine, extraStickerClass = false) {
+  container.className = `${isMine ? 'msg-row-me' : 'msg-row-other'} msg-row${extraStickerClass ? ' msg-row-sticker' : ''}`;
+
+  const content = document.createElement('div');
+  content.className = 'msg-content';
+  content.dataset.swipeable = '1';
+
+  if (!isMine) {
+    const senderEl = document.createElement('div');
+    senderEl.className = 'msg-sender';
+    senderEl.textContent = msg.sender || 'Usuario';
+    content.appendChild(senderEl);
+  }
+
+  const body = document.createElement('div');
+  body.className = `msg-body ${isMine ? 'msg-body-me' : 'msg-body-other'}`;
+  content.appendChild(body);
+
+  const replyBtn = createReplyButton(msg);
+  if (isMine) {
+    container.appendChild(replyBtn);
+    container.appendChild(content);
+  } else {
+    container.appendChild(content);
+    container.appendChild(replyBtn);
+  }
+
+  attachSwipeReply(content, msg);
+  return { content, body, replyBtn };
+}
+
+function createReplyButton(msg) {
+  const btn = document.createElement('button');
+  btn.className = 'msg-reply-icon';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', `Responder a ${msg.sender || 'mensaje'}`);
+  btn.title = 'Responder';
+  btn.innerHTML = `
+    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false">
+      <path d="M7.2 5.2L2.4 10l4.8 4.8v-3h3.2c2.7 0 5 1.1 7.2 3.5-.5-5-3.3-7.5-8-7.5H7.2v-2.6z" fill="currentColor"></path>
+    </svg>`;
+  btn.addEventListener('click', () => setActiveReplyFromMessage(msg));
+  return btn;
+}
+
+function makeTimeNode(ts, isMine) {
   const time = document.createElement('div');
   time.className = 'msg-time';
-  time.style.cssText = isMine ? 'text-align:right; margin-right:2px;' : 'margin-left:2px;';
-  time.textContent = formatTime(msg.ts);
+  time.textContent = formatTime(ts);
+  if (isMine) time.classList.add('msg-time-me');
+  return time;
+}
 
-  wrap.appendChild(btn);
-  wrap.appendChild(time);
-  container.appendChild(wrap);
+function attachSwipeReply(targetEl, msg) {
+  let startX = 0;
+  let startY = 0;
+  let translateX = 0;
+  let tracking = false;
+  let pointerId = null;
+  let consumed = false;
+
+  targetEl.addEventListener('pointerdown', evt => {
+    if (evt.pointerType === 'mouse') return;
+    tracking = true;
+    consumed = false;
+    pointerId = evt.pointerId;
+    startX = evt.clientX;
+    startY = evt.clientY;
+    translateX = 0;
+    targetEl.style.transition = '';
+  });
+
+  targetEl.addEventListener('pointermove', evt => {
+    if (!tracking || evt.pointerId !== pointerId) return;
+    const dx = evt.clientX - startX;
+    const dy = evt.clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 9) {
+      tracking = false;
+      resetSwipeTransform(targetEl);
+      return;
+    }
+    translateX = Math.max(0, Math.min(SWIPE_REPLY.maxTranslatePx, dx));
+    if (translateX > 0) {
+      consumed = true;
+      targetEl.style.transform = `translateX(${translateX}px)`;
+    }
+  });
+
+  function finishSwipe() {
+    if (tracking && translateX >= SWIPE_REPLY.thresholdPx) {
+      setActiveReplyFromMessage(msg);
+      if (navigator.vibrate) navigator.vibrate(10);
+    }
+    tracking = false;
+    pointerId = null;
+    resetSwipeTransform(targetEl);
+  }
+
+  targetEl.addEventListener('pointerup', finishSwipe);
+  targetEl.addEventListener('pointercancel', finishSwipe);
+  targetEl.addEventListener('click', evt => {
+    if (consumed) evt.stopPropagation();
+    consumed = false;
+  }, true);
+}
+
+function resetSwipeTransform(targetEl) {
+  targetEl.style.transition = 'transform 130ms ease-out';
+  targetEl.style.transform = 'translateX(0px)';
+  setTimeout(() => { targetEl.style.transition = ''; }, 150);
 }
 
 function setActiveReplyFromMessage(msg) {
